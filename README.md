@@ -1,10 +1,10 @@
-# REPOSITORY FOR EX SITU PGRFA METRICS: `new15crops` Branch
+# REPOSITORY FOR EX SITU PGRFA METRICS: `new15crops`
 
-This branch extends the original methodology for computing ex situ conservation metrics of Plant Genetic Resources for Food and Agriculture (PGRFA), with a focused analysis on a subset of 15 priority crops. It introduces modular scripts, reproducible workflows, and outputs tailored to crop-specific conservation insights.
+This fork extends the original methodology for computing ex situ conservation metrics of Plant Genetic Resources for Food and Agriculture (PGRFA), with a focused analysis on a subset of 15 priority crops. It introduces modular scripts, reproducible workflows, and outputs tailored to crop-specific conservation insights.
 
 ## Purpose
 
-To generate and refine conservation metrics for a targeted crop subset using harmonized data from Genesys, WIEWS, BGCI, GLIS, and SGSV. This branch supports:
+To generate and refine conservation metrics for a targeted crop subset using harmonized data from Genesys, WIEWS, BGCI, GLIS, and SGSV. This fork supports:
 - Subset-specific metric computation
 - Enhanced reproducibility and documentation
 - Modular outputs for reporting and review
