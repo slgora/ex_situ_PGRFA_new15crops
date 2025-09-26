@@ -168,9 +168,9 @@ instcode_list_genesys <- data_source %>% filter(keep == 'Genesys') %>% pull(INST
 # Drop unwanted data sources before merging dataset with WIEWS
 Genesys_new15crops <- Genesys_new15crops %>% filter(INSTCODE %in% instcode_list_genesys)         ### update thsi step with function below to select inst by data sources, 2025_09_25
 
-##### correcting manually these species names as they occur in a lot of accessions
-Genesys_new15crops$SPECIES <- gsub('z.mays', 'mays', Genesys_new15crops$SPECIES)
-Genesys_new15crops$SPECIES <- gsub('o.sativa', 'sativa', Genesys_new15crops$SPECIES)
+##### correcting manually these species names as they occur in a lot of accessions                ### update this step after reviewing the new 15 crops data manually, delete if not needed, 2025_09_25
+#Genesys_new15crops$SPECIES <- gsub('z.mays', 'mays', Genesys_new15crops$SPECIES)
+#Genesys_new15crops$SPECIES <- gsub('o.sativa', 'sativa', Genesys_new15crops$SPECIES)
 ######
 
 # Replace NA values with empty strings for 'subTaxa' and 'spAuthor'
@@ -266,7 +266,6 @@ source("Functions/Load_WIEWS_indicator_data.R") # source function
 WIEWS_indicator_new15_proccessed <- process_wiews_indicator_data(
   wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
   croplist_path = "../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx")
-
 # save results
 write.csv(WIEWS_indicator_new15_proccessed, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
 
