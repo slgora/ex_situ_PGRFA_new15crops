@@ -4,13 +4,16 @@
 #### Set working directory: working directory is assumed to be Code/R_code , following shared folder structure ####
 
 #### Install packages ####
-# tidyverse already include tidyr , dplyr, readr, magrittr, stringr, readxl
-install.packages("tidyverse")
+# tidyverse already includes tidyr , dplyr, readr, magrittr, stringr, readxl
+if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("writexl")) install.packages("writexl")
+if (!require("readxl")) install.packages("readxl")
+if (!require("rlang")) install.packages("rlang")
 library(tidyverse)
 library(readxl)
-install.packages("writexl")
 library(writexl)
 library(dplyr)
+library(rlang)
 
 ####################################################################################################
 ########### Read in all database data for all crops ################################################
@@ -26,13 +29,13 @@ geo_names <- subset(geo_names, select = c(country2, country3))
 institute_names <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG_with_synonyms.xlsx")
 names(institute_names)[names(institute_names) == 'WIEWS instcode'] <- 'INSTCODE'
 names(institute_names)[names(institute_names) == 'Name of organization'] <- 'Name_of_organization'
-institute_names_full <- subset(institute_names, select = c(`INSTCODE`, `Name_of_organization`))  %>% drop_na()
+institute_names_full <- subset(institute_names, select = c(INSTCODE, Name_of_organization))  %>% drop_na()
 institute_names_no_syn <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG.xlsx")
 names(institute_names_no_syn)[names(institute_names_no_syn) == 'WIEWS instcode'] <- 'INSTCODE'
 names(institute_names_no_syn)[names(institute_names_no_syn) == 'Organization authority status'] <- 'ORGANIZATIONTYPE'
-institute_names_no_syn <- subset(institute_names_no_syn, select = c(`INSTCODE`, `ORGANIZATIONTYPE`))  %>% drop_na()
+institute_names_no_syn <- subset(institute_names_no_syn, select = c(INSTCODE, ORGANIZATIONTYPE))  %>% drop_na()
 WIEWS_institute_IDs <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/WIEWS_instIDs.xlsx")
-WIEWS_institute_IDs = subset(WIEWS_institute_IDs, select = c('ID' , 'WIEWS_INSTCODE'))
+WIEWS_institute_IDs = subset(WIEWS_institute_IDs, select = c(ID , WIEWS_INSTCODE))
 # read file to select institution and data source
 # data_source <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/Source_selection/selection_data_sources.xlsx")                    ### delete this file, not relvant to new 15 crops 
 
@@ -76,6 +79,7 @@ BGCI_new15crops <- select(BGCI_new15crops, -c('Germplasm, seed', "Germplasm, pla
 # Fields we want to keep
 BGCI_new15crops <- subset(BGCI_new15crops, select = c(data_source, fullTaxa, ex_situ_site_gardenSearch_ID, GENUS, SPECIES, STORAGE ))
 # Note: you need to create folder DATE_OF_RUN before running the following line of code
+if (!dir.exists("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24")) dir.create("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24", recursive = TRUE)
 write.csv(BGCI_new15crops, "../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/BGCI_new15crops_processed.csv", row.names = FALSE)
 
 ############### WIEWS: Data Cleaning ####################
@@ -112,12 +116,6 @@ WIEWS_new15crops <- WIEWS_new15crops %>%
 
 # Add field: data source
 WIEWS_new15crops <- cbind(WIEWS_new15crops, data_source = "WIEWS")
-
-# Get lists of INSTCODEs to keep for each data source
-instcode_list_wiews  <- data_source %>% filter(keep == 'WIEWS') %>% pull(INSTCODE) %>% unique()
-
-# Drop unwanted data sources before merging dataset with Genesys
-WIEWS_new15crops   <- WIEWS_new15crops   %>% filter(INSTCODE %in% instcode_list_wiews)                ### update this step with function below to select inst by data sources, 2025_09_25
 
 ## Standardize ACCENUMB field: remove blank/space between institute abbreviation and number
 WIEWS_new15crops  <- WIEWS_new15crops  %>%
@@ -162,17 +160,6 @@ Genesys_new15crops <- subset(Genesys_new15crops, select = c(INSTCODE, ACCENUMB,
 # Add field: data source
 Genesys_new15crops <- cbind(Genesys_new15crops, data_source = "Genesys")
 
-# Get lists of INSTCODEs to keep for each data source
-instcode_list_genesys <- data_source %>% filter(keep == 'Genesys') %>% pull(INSTCODE) %>% unique()
-
-# Drop unwanted data sources before merging dataset with WIEWS
-Genesys_new15crops <- Genesys_new15crops %>% filter(INSTCODE %in% instcode_list_genesys)         ### update thsi step with function below to select inst by data sources, 2025_09_25
-
-##### correcting manually these species names as they occur in a lot of accessions                ### update this step after reviewing the new 15 crops data manually, delete if not needed, 2025_09_25
-#Genesys_new15crops$SPECIES <- gsub('z.mays', 'mays', Genesys_new15crops$SPECIES)
-#Genesys_new15crops$SPECIES <- gsub('o.sativa', 'sativa', Genesys_new15crops$SPECIES)
-######
-
 # Replace NA values with empty strings for 'subTaxa' and 'spAuthor'
 Genesys_new15crops$SUBTAXA <- ifelse(is.na(Genesys_new15crops$SUBTAXA), "", Genesys_new15crops$SUBTAXA)
 Genesys_new15crops$SPAUTHOR <- ifelse(is.na(Genesys_new15crops$SPAUTHOR), "", Genesys_new15crops$SPAUTHOR)
@@ -184,8 +171,27 @@ Genesys_new15crops$fullTaxa <- trimws(paste(Genesys_new15crops$GENUS, Genesys_ne
 Genesys_new15crops <- Genesys_new15crops %>%
   mutate(ACCENUMB = str_replace_all(ACCENUMB, " ", ""))
 
-############### update this line to use function to select inst by data sources, 2025_09_25
-                                 
+####################################################################################################
+##### CREATE SELECTION DATA SOURCES TABLE #####
+source("Functions/safe_count.R")
+source("Functions/keep_criteria.R")
+source("Functions/make_instcode_table.R")
+
+selection_data_sources <- make_instcode_table(
+  Genesys_new15crops,
+  WIEWS_new15crops,
+  eurisco_path = "G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/EURISCO_instcodes.xlsx",
+  insttype_path = "G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/institute_type.xlsx",
+  keep_criteria = keep_criteria
+)
+
+# Use selection_data_sources to filter main data
+genesys_keep_inst <- selection_data_sources %>% filter(keep == "Genesys") %>% pull(INSTCODE)
+wiews_keep_inst   <- selection_data_sources %>% filter(keep == "WIEWS") %>% pull(INSTCODE)
+
+Genesys_new15crops <- Genesys_new15crops %>% filter(INSTCODE %in% genesys_keep_inst)
+WIEWS_new15crops   <- WIEWS_new15crops %>% filter(INSTCODE %in% wiews_keep_inst)
+
 ####################################################################################################
 ## Combine Genesys and WIEWS data and Remove duplicates between Genesys and WIEWS, keep Genesys ##################################################
 #format for merge
@@ -246,7 +252,6 @@ gen_wiews_new15_df = assign_org_type(gen_wiews_new15_df, institute_names_no_syn)
 gen_wiews_new15_df$STORAGE <- as.character(gen_wiews_new15_df$STORAGE)
 write.csv(gen_wiews_new15_df, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/gen_wiews_new15_df.csv', row.names = FALSE)
 
-
 ################# SGSV data ##########################################################################
 source("Functions/Load_SGSV_data.R")
 sgsv = load_SGSV_data('../../GCCSmetricsII/Data/SGSV/Deposits_all_genera_aggregated/SGSV_new15crops_unformatted.xlsx')
@@ -258,7 +263,6 @@ sgsv$ID <- paste0(sgsv$ACCENUMB, sgsv$INSTCODE)
 sgsv <- sgsv[!duplicated(sgsv$ID), ]
 # save results
 write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/SGSV_new15crops_processed.csv', row.names = FALSE)
-
 
 ################# FAO WIEWS Indicator data ##########################################################################
 # read in FAO WIEWS indicator file and croplist_PG within function
