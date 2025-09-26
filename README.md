@@ -5,7 +5,7 @@ This fork extends the original methodology from the first 15 crops for computing
 ## Purpose
 
 To generate and refine conservation metrics for a targeted crop subset using harmonized data from Genesys, WIEWS, BGCI, GLIS, and SGSV. This fork supports:
-- Subset-specific metric computation
+- Crop-specific metric computation for new 15 crops
 - Enhanced reproducibility and documentation
 - Modular outputs for reporting and review
 
