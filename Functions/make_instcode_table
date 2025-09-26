@@ -1,0 +1,46 @@
+library(readxl)
+library(dplyr)
+library(rlang)
+
+
+make_instcode_table <- function(
+  Genesys_new15crops, WIEWS_new15crops, 
+  eurisco_path, insttype_path, keep_criteria,
+  save_path = "G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/selection_data_sources.csv"
+) {
+  all_instcodes <- unique(c(Genesys_new15crops$INSTCODE, WIEWS_new15crops$INSTCODE))
+  inst_df <- data.frame(INSTCODE = all_instcodes, stringsAsFactors = FALSE)
+  genesys_counts <- safe_count(Genesys_new15crops, "INSTCODE", "Genesys")
+  wiews_counts   <- safe_count(WIEWS_new15crops,   "INSTCODE", "WIEWS")
+  inst_df <- suppressWarnings(
+    inst_df %>%
+      left_join(genesys_counts, by = "INSTCODE") %>%
+      left_join(wiews_counts, by = "INSTCODE")
+  )
+  inst_df$Genesys[is.na(inst_df$Genesys)] <- 0
+  inst_df$WIEWS[is.na(inst_df$WIEWS)] <- 0
+
+  EURISCO_instcodes <- read_excel(eurisco_path)
+  eurisco_list <- unique(EURISCO_instcodes$INSTCODE)
+  inst_df$EURISCO <- ifelse(inst_df$INSTCODE %in% eurisco_list, "Y", "N")
+
+  insttype_guide <- read_excel(insttype_path)
+  if (!all(c("INSTCODE", "institute_type") %in% names(insttype_guide))) {
+    stop("The institute type guide file must contain columns: INSTCODE, institute_type")
+  }
+  inst_df <- left_join(inst_df, insttype_guide[, c("INSTCODE", "institute_type")], by = "INSTCODE")
+  inst_df$institute_type[is.na(inst_df$institute_type)] <- ""
+
+  inst_df$keep <- keep_criteria(inst_df)
+  inst_df <- inst_df[, c("INSTCODE", "Genesys", "WIEWS", "EURISCO", "keep", "institute_type")]
+
+  # Sort by total accessions (Genesys + WIEWS), descending, then INSTCODE
+  inst_df <- inst_df %>%
+    arrange(desc(Genesys + WIEWS), INSTCODE)
+
+  # Save as selection_data_sources.csv
+  write.csv(inst_df, save_path, row.names = FALSE)
+
+  # Also return the data frame in case you want to use it in R session
+  return(inst_df)
+}
