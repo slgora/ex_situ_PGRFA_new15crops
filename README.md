@@ -1,6 +1,6 @@
 # REPOSITORY FOR EX SITU PGRFA METRICS: `new15crops`
 
-This fork extends the original methodology for computing ex situ conservation metrics of Plant Genetic Resources for Food and Agriculture (PGRFA), with a focused analysis on a subset of 15 priority crops. It introduces modular scripts, reproducible workflows, and outputs tailored to crop-specific conservation insights.
+This fork extends the original methodology from the first 15 crops for computing ex situ conservation metrics of Plant Genetic Resources for Food and Agriculture (PGRFA), with a focused analysis on a subset of new 15 priority crops. It introduces modular scripts, reproducible workflows, and outputs tailored to crop-specific conservation insights.
 
 ## Purpose
 
