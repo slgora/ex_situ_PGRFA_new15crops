@@ -1,0 +1,25 @@
+keep_criteria <- function(df) {
+  out <- character(nrow(df))
+  for (i in seq_len(nrow(df))) {
+    if (tolower(df$institute_type[i]) == "cgiar") {
+      if (df$Genesys[i] > 0) {
+        out[i] <- "Genesys"
+      } else {
+        out[i] <- "WIEWS"
+      }
+    } else if (df$EURISCO[i] == "Y") {
+      if (df$WIEWS[i] > 0) {
+        out[i] <- "WIEWS"
+      } else {
+        out[i] <- "Genesys"
+      }
+    } else {
+      if (df$Genesys[i] >= df$WIEWS[i]) {
+        out[i] <- "Genesys"
+      } else {
+        out[i] <- "WIEWS"
+      }
+    }
+  }
+  return(out)
+}
