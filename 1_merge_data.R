@@ -36,8 +36,6 @@ names(institute_names_no_syn)[names(institute_names_no_syn) == 'Organization aut
 institute_names_no_syn <- subset(institute_names_no_syn, select = c(INSTCODE, ORGANIZATIONTYPE))  %>% drop_na()
 WIEWS_institute_IDs <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/WIEWS_instIDs.xlsx")
 WIEWS_institute_IDs = subset(WIEWS_institute_IDs, select = c(ID , WIEWS_INSTCODE))
-# read file to select institution and data source
-# data_source <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/Source_selection/selection_data_sources.xlsx")                    ### delete this file, not relvant to new 15 crops 
 
 ####################################################################################################
 ########## Change field names to follow MCPD standard see https://www.fao.org/plant-treaty/tools/toolbox-for-sustainable-use/details/en/c/1367915/ ############################################
@@ -173,11 +171,10 @@ Genesys_new15crops <- Genesys_new15crops %>%
 
 ####################################################################################################
 ##### CREATE SELECTION DATA SOURCES TABLE #####
-source("Functions/safe_count.R")
-source("Functions/keep_criteria.R")
-source("Functions/make_instcode_table.R")
+source("Functions/keep_criteria.R")        # delete? 
+source("Functions/select_data_source.R")
 
-selection_data_sources <- make_instcode_table(
+selection_data_sources <- make_instcode_table(                  # implement select_data_source function here, replace make_inst_code_table
   Genesys_new15crops,
   WIEWS_new15crops,
   eurisco_path = "G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/EURISCO_instcodes.xlsx",
