@@ -189,26 +189,23 @@ WIEWS_new15crops   <- WIEWS_new15crops %>% filter(INSTCODE %in% wiews_keep_inst)
 ####################################################################################################
 ## Combine Genesys and WIEWS data and Remove duplicates between Genesys and WIEWS, keep Genesys ##################################################
 #format for merge
-WIEWS_new15crops$SAMPSTAT <- as.numeric(WIEWS_new15crops$SAMPSTAT) #convert to numeric for merge
-Genesys_new15crops$SAMPSTAT <- as.numeric(Genesys_new15crops$SAMPSTAT) #convert to numeric for merge
-
-WIEWS_new15crops <- WIEWS_new15crops %>%
+WIEWS_new15crops$SAMPSTAT <- as.numeric(WIEWS_new15crops$SAMPSTAT) #format SAMPSTAT
+Genesys_new15crops$SAMPSTAT <- as.numeric(Genesys_new15crops$SAMPSTAT)
+WIEWS_new15crops <- WIEWS_new15crops %>%   #format geo data 
   rename(DECLONGITUDE_origin = DECLONGITUDE,
          DECLATITUDE_origin  = DECLATITUDE) %>%
   mutate(DECLONGITUDE = suppressWarnings(as.numeric(DECLONGITUDE_origin)),
          DECLATITUDE  = suppressWarnings(as.numeric(DECLATITUDE_origin)))
-Genesys_new15crops <- Genesys_new15crops %>%
+Genesys_new15crops <- Genesys_new15crops %>%   #format geo data
   rename(DECLONGITUDE_origin = DECLONGITUDE,
          DECLATITUDE_origin  = DECLATITUDE) %>%
   mutate(DECLONGITUDE = suppressWarnings(as.numeric(DECLONGITUDE_origin)),
          DECLATITUDE  = suppressWarnings(as.numeric(DECLATITUDE_origin)))
-
-Genesys_new15crops$DECLONGITUDE_origin <- as.character(Genesys_new15crops$DECLONGITUDE_origin)
+Genesys_new15crops$DECLONGITUDE_origin <- as.character(Genesys_new15crops$DECLONGITUDE_origin) #keep origin fields in case of format error
 WIEWS_new15crops$DECLONGITUDE_origin  <- as.character(WIEWS_new15crops$DECLONGITUDE_origin)
-Genesys_new15crops$DECLATITUDE_origin <- as.character(Genesys_new15crops$DECLATITUDE_origin)
+Genesys_new15crops$DECLATITUDE_origin <- as.character(Genesys_new15crops$DECLATITUDE_origin) #keep origin fields in case format error
 WIEWS_new15crops$DECLATITUDE_origin  <- as.character(WIEWS_new15crops$DECLATITUDE_origin)
-
-Genesys_new15crops$COLLSRC <- as.character(Genesys_new15crops$COLLSRC)
+Genesys_new15crops$COLLSRC <- as.character(Genesys_new15crops$COLLSRC)  #format COLLSRC
 WIEWS_new15crops$COLLSRC  <- as.character(WIEWS_new15crops$COLLSRC)
 
 # bind rows
@@ -245,6 +242,39 @@ gen_wiews_new15_df = assign_org_type(gen_wiews_new15_df, institute_names_no_syn)
 # save results
 gen_wiews_new15_df$STORAGE <- as.character(gen_wiews_new15_df$STORAGE)
 write.csv(gen_wiews_new15_df, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_df.csv', row.names = FALSE)
+                                 
+################## GLIS data ########################################################################
+# GLIS data received from Plant Treaty
+all_glis_data <- read_tsv("../../GCCSmetricsII/Data/Plant_Treaty/GLIS/all_glis_data.csv")
+
+#rename all columns according to MCPD naming style, and select columns that are needed
+all_glis_data <- all_glis_data %>%
+  transmute(
+    DOI          = doi,
+    ACCENUMB     = holdsid,
+    INSTCODE     = holdwiews,
+    GENUS        = genus,
+    SPECIES      = species,
+    SPAUTH       = spauth,
+    SUBTAXA      = subtaxa,
+    STAUTH       = stauth,
+    SAMPSTAT     = biostatus,
+    ORIGCTY      = holdcountry,
+    DECLATITUDE  = colllat,
+    DECLONGITUDE = colllon,
+    MLS          = as.numeric(ifelse(mlsstatus %in% c("", "(null)", NA), NA, mlsstatus)),
+    date         = date)
+
+# Replace all (null) with blank in every column
+all_glis_data <- all_glis_data %>%
+  mutate(across(everything(), ~replace(., . == "(null)", "")))
+
+#generate MLSSTAT variable, used later to compute metrics on # of accessions included in the MLS
+all_glis_data$MLSSTAT = NA
+all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(1, 11, 12, 13, 14, 15), TRUE, all_glis_data$MLSSTAT)
+all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(0), FALSE, all_glis_data$MLSSTAT)
+# save results
+write.csv(all_glis_data, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/GLIS_new15_processed.csv', row.names = FALSE)
 
 ################# SGSV data ##########################################################################
 source("Functions/Load_SGSV_data.R")
@@ -259,7 +289,7 @@ sgsv <- sgsv[!duplicated(sgsv$ID), ]
 write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/SGSV_new15crops_processed.csv', row.names = FALSE)
 
 ################# FAO WIEWS Indicator data ##########################################################################
-# read in FAO WIEWS indicator file and croplist_PG within function
+# read in FAO WIEWS indicator file and croplist_new15crops within function
 source("Functions/Load_WIEWS_indicator_data.R") # source function
 WIEWS_indicator_new15_proccessed <- process_wiews_indicator_data(
   wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
