@@ -17,24 +17,24 @@ library(rlang)
 
 ####################################################################################################
 ########### Read in all database data for all crops ################################################
-BGCI_new15crops <- read_csv("../../GCCSmetricsII/Data/BGCIPlantSearch_data/BGCI_new15crops_unformatted.csv")
-WIEWS_new15crops <- read_csv("../../GCCSmetricsII/Data/FAO_WIEWS/Passport_data/all_crops_aggregated/WIEWS_new15crops.csv")
-Genesys_new15crops <- read_csv("../../GCCSmetricsII/Data/Genesys/Data_aggregated_all_selected_GCCS/Genesys_new15crops_unformatted.csv")
+BGCI_new15crops <- read_csv("../../GCCS metrics project shared folder/GCCSmetricsII/Data/BGCIPlantSearch_data/BGCI_new15crops_unformatted.csv")
+WIEWS_new15crops <- read_csv("../../GCCS metrics project shared folder/GCCSmetricsII/Data/FAO_WIEWS/Passport_data/all_crops_aggregated/WIEWS_new15crops.csv")
+Genesys_new15crops <- read_csv("../../GCCS metrics project shared folder/GCCSmetricsII/Data/Genesys/Data_aggregated_all_selected_GCCS/Genesys_new15crops_unformatted.csv")
 
 ##### read file with country codes, I added na.strings to resolve the problem with NA for Namibia becoming a NaN value
-geo_names <- read_csv("../../GCCSmetricsII/Data_processing/Support_files/Geographical/geo_names.csv", na = c("", "-"))
+geo_names <- read_csv("../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Geographical/geo_names.csv", na = c("", "-"))
 ## subset only the relevant column to join- 2 letter country code and the 3 letter abbreviation
 geo_names <- subset(geo_names, select = c(country2, country3))
 #####  file with institute names and FAO INSTCODE, some synonyms were added to the list
-institute_names <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG_with_synonyms.xlsx")
+institute_names <- read_excel("../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG_with_synonyms.xlsx")
 names(institute_names)[names(institute_names) == 'WIEWS instcode'] <- 'INSTCODE'
 names(institute_names)[names(institute_names) == 'Name of organization'] <- 'Name_of_organization'
 institute_names_full <- subset(institute_names, select = c(INSTCODE, Name_of_organization))  %>% drop_na()
-institute_names_no_syn <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG.xlsx")
+institute_names_no_syn <- read_excel("../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG.xlsx")
 names(institute_names_no_syn)[names(institute_names_no_syn) == 'WIEWS instcode'] <- 'INSTCODE'
 names(institute_names_no_syn)[names(institute_names_no_syn) == 'Organization authority status'] <- 'ORGANIZATIONTYPE'
 institute_names_no_syn <- subset(institute_names_no_syn, select = c(INSTCODE, ORGANIZATIONTYPE))  %>% drop_na()
-WIEWS_institute_IDs <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/WIEWS_instIDs.xlsx")
+WIEWS_institute_IDs <- read_excel("../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/WIEWS_instIDs.xlsx")
 WIEWS_institute_IDs = subset(WIEWS_institute_IDs, select = c(ID , WIEWS_INSTCODE))
 
 ####################################################################################################
@@ -77,8 +77,7 @@ BGCI_new15crops <- select(BGCI_new15crops, -c('Germplasm, seed', "Germplasm, pla
 # Fields we want to keep
 BGCI_new15crops <- subset(BGCI_new15crops, select = c(data_source, fullTaxa, ex_situ_site_gardenSearch_ID, GENUS, SPECIES, STORAGE ))
 # Note: you need to create folder DATE_OF_RUN before running the following line of code
-if (!dir.exists("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24")) dir.create("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24", recursive = TRUE)
-write.csv(BGCI_new15crops, "../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/BGCI_new15crops_processed.csv", row.names = FALSE)
+write.csv(BGCI_new15crops, "../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/BGCI_new15crops_processed.csv", row.names = FALSE)
 
 ############### WIEWS: Data Cleaning ####################
 #rename all columns according to MCPD naming style, and select columns that are needed
@@ -147,13 +146,13 @@ WIEWS_new15crops <- WIEWS_new15crops %>% mutate(MLSSTAT = as.logical(MLSSTAT))
 ############### Genesys PGR: Data Read in and Cleaning ####################
 # select columns to keep
 Genesys_new15crops <- subset(Genesys_new15crops, select = c(INSTCODE, ACCENUMB,
-                                                        GENUS, SPECIES, SPAUTHOR, SUBTAXA, SUBTAUTHOR,
-                                                        GRIN_NAME, CROPNAME, ACQDATE, ACCENAME, SAMPSTAT,
-                                                        DONORCODE, DONORNAME, OTHERNUMB, DONORNUMB, # added for PDCI calc
-                                                        ORIGCTY, DECLATITUDE,DECLONGITUDE, ELEVATION,
-                                                        BREDCODE, ANCEST, DUPLSITE, STORAGE,
-                                                        COLLDATE, COLLSITE, COLLSRC, COLLNUMB, COLLCODE,
-                                                        MLSSTAT, ACCEURL, DOI))
+                                                            GENUS, SPECIES, SPAUTHOR, SUBTAXA, SUBTAUTHOR,
+                                                            GRIN_NAME, CROPNAME, ACQDATE, ACCENAME, SAMPSTAT,
+                                                            DONORCODE, DONORNAME, OTHERNUMB, DONORNUMB, # added for PDCI calc
+                                                            ORIGCTY, DECLATITUDE,DECLONGITUDE, ELEVATION,
+                                                            BREDCODE, ANCEST, DUPLSITE, STORAGE,
+                                                            COLLDATE, COLLSITE, COLLSRC, COLLNUMB, COLLCODE,
+                                                            MLSSTAT, ACCEURL, DOI))
 
 # Add field: data source
 Genesys_new15crops <- cbind(Genesys_new15crops, data_source = "Genesys")
@@ -173,12 +172,11 @@ Genesys_new15crops <- Genesys_new15crops %>%
 ##### CREATE SELECTION DATA SOURCES TABLE #####
 source("Functions/Select_data_source.R")
 
-selection_data_sources <- make_instcode_table(                  # implement select_data_source function here, replace make_inst_code_table
-  Genesys_new15crops,
-  WIEWS_new15crops,
-  eurisco_path = "G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/EURISCO_instcodes.xlsx",
-  insttype_path = "G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/institute_type.xlsx",
-  keep_criteria = keep_criteria
+selection_data_sources <- select_data_source(
+  Genesys_new15crops = Genesys_new15crops,
+  WIEWS_new15crops = WIEWS_new15crops,
+  institute_names_no_syn = institute_names_no_syn,
+  eurisco_path = "../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/Source_selection/EURISCO_instcodes.xlsx"
 )
 
 # Use selection_data_sources to filter main data
@@ -224,7 +222,7 @@ gen_wiews_counts <- gen_wiews_new15_df %>%
   group_by(INSTCODE, GENUS, data_source) %>%
   summarize(n = n()) %>%
   arrange(desc(n))
-write.csv(gen_wiews_counts, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/gen_wiews_new15_counts_before_dropping_duplicates.csv', row.names = FALSE)
+write.csv(gen_wiews_counts, '../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_counts_before_dropping_duplicates.csv', row.names = FALSE)
 
 # Remove WIEWS rows where a Genesys row exists with the same (non-missing) DOI
 gen_wiews_new15_df <- gen_wiews_new15_df %>%
@@ -246,11 +244,11 @@ gen_wiews_new15_df = assign_org_type(gen_wiews_new15_df, institute_names_no_syn)
 
 # save results
 gen_wiews_new15_df$STORAGE <- as.character(gen_wiews_new15_df$STORAGE)
-write.csv(gen_wiews_new15_df, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/gen_wiews_new15_df.csv', row.names = FALSE)
+write.csv(gen_wiews_new15_df, '../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_df.csv', row.names = FALSE)
 
 ################# SGSV data ##########################################################################
 source("Functions/Load_SGSV_data.R")
-sgsv = load_SGSV_data('../../GCCSmetricsII/Data/SGSV/Deposits_all_genera_aggregated/SGSV_new15crops_unformatted.xlsx')
+sgsv = load_SGSV_data('../../GCCS metrics project shared folder/GCCSmetricsII/Data/SGSV/Deposits_all_genera_aggregated/SGSV_new15crops_unformatted.xlsx')
 
 # create uniqueID and drop duplicates
 sgsv$ACCENUMB <- trimws(sgsv$ACCENUMB)
@@ -258,15 +256,16 @@ sgsv$INSTCODE <- trimws(sgsv$INSTCODE)
 sgsv$ID <- paste0(sgsv$ACCENUMB, sgsv$INSTCODE)
 sgsv <- sgsv[!duplicated(sgsv$ID), ]
 # save results
-write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/SGSV_new15crops_processed.csv', row.names = FALSE)
+write.csv(sgsv, '../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/SGSV_new15crops_processed.csv', row.names = FALSE)
 
 ################# FAO WIEWS Indicator data ##########################################################################
 # read in FAO WIEWS indicator file and croplist_PG within function
 source("Functions/Load_WIEWS_indicator_data.R") # source function
 WIEWS_indicator_new15_proccessed <- process_wiews_indicator_data(
-  wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
-  croplist_path = "../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx")
+  wiews_path = "../../GCCS metrics project shared folder/GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
+  croplist_path = "../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx"
+)
 # save results
-write.csv(WIEWS_indicator_new15_proccessed, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_24/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
+write.csv(WIEWS_indicator_new15_proccessed, '../../GCCS metrics project shared folder/GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
 
 ############ END SCRIPT ##############
