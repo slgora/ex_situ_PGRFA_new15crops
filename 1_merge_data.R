@@ -171,7 +171,7 @@ Genesys_new15crops <- Genesys_new15crops %>%
 
 ####################################################################################################
 ##### CREATE SELECTION DATA SOURCES TABLE #####
-source("Functions/select_data_source.R")
+source("Functions/Select_data_source.R")
 
 selection_data_sources <- make_instcode_table(                  # implement select_data_source function here, replace make_inst_code_table
   Genesys_new15crops,
