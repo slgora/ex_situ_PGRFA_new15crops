@@ -1,11 +1,14 @@
-### 
+### Standardize Taxa with Global Name Verifier Tool 
 
 library(tidyr)
 library(httr)
 library(jsonlite)
 
-# read dataset 
-df = read.csv("../../Data_processing/1_merge_data/DATE_OF_RUN/gen_wiews_df.csv", header = TRUE )
+# read dataset
+df = read.csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_df.csv", header = TRUE )
+
+# combine GENUS + SPECIES + SPAUTHOR to account for the taxa author in the input name
+df <- df %>% unite("fullTaxa2", GENUS, SPECIES, SPAUTHOR, sep = " ", na.rm = TRUE)
 
 ####################
 # load functions
@@ -13,7 +16,7 @@ source('Functions/Query_taxa_resolver.R')   # import function query_taxa_resolve
 source('Functions/Process_taxa_resolver_results.R') # import function extract_best_result
 
 # taxa list to be standardised
-taxa_list <- unique(trimws(na.omit(df$fullTaxa)))
+taxa_list <- unique(trimws(na.omit(df$fullTaxa2)))
 
 # loop trough taxa list and query the API
 result_queries_WFO <- list()
@@ -42,8 +45,22 @@ taxa_standardized_df_GRIN <- cbind(taxa_standardized_df_GRIN, data_source = "GRI
 
 # Join results from GRIN with results from WFO
 taxa_standardized_df <- taxa_standardized_df_GRIN %>%
-  full_join(taxa_standardized_df_WFO, by = c("input_name" = "input_name")) 
+  full_join(taxa_standardized_df_WFO, by = c("input_name" = "input_name"))
+
+# add outputs_comparison field for review
+taxa_standardized_df <- taxa_standardized_df %>%
+  mutate(
+    output_name_GRIN_chr = sapply(output_name_GRIN, as.character),
+    output_name_WFO_chr  = sapply(output_name_WFO, as.character),
+    outputs_comparison = ifelse(
+      is.na(output_name_GRIN_chr) | is.na(output_name_WFO_chr) |
+        output_name_GRIN_chr != output_name_WFO_chr,
+      "outputs_differ",
+      "outputs_match"))
 
 # save table with results from both WFO and GRIN
 df_save_results <- apply(taxa_standardized_df,2,as.character)
-write.csv(df_save_results, '../../Data_processing/2_standardize_taxa/standardized_taxaDATE.csv', row.names = FALSE)
+write.csv(df_save_results, '../../GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_29/gen_wiews_new15crops_standardized_taxa2025_09_29_2.csv', row.names = FALSE)
+
+
+############ END SCRIPT ##############
