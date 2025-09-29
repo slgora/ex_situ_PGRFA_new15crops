@@ -1,46 +1,78 @@
-# script for select data source, added 09_26_2025
-# needs testing and debugging
-
-
-
+#' Select Preferred Data Source for Institutes
+#'
+#' This function summarizes and compares the number of records per institute (INSTCODE)
+#' from two data sources (Genesys and WIEWS) for a set of crops, assigns organization type,
+#' checks if the institute is present in EURISCO, and determines which data source to keep.
+#'
+#' @param Genesys_new15crops A data frame containing accessions from Genesys for new 15 crops.
+#'   Must include an "INSTCODE" column.
+#' @param WIEWS_new15crops A data frame containing accessions from WIEWS for new 15 crops.
+#'   Must include an "INSTCODE" column.
+#' @param institute_names_no_syn A data frame used to assign organization types to institutes.
+#'   Must include "INSTCODE" and "ORGANIZATIONTYPE" columns.
+#' @param eurisco_path File path to an Excel file containing the EURISCO institute list.
+#'   The file must have an "INSTCODE" column.
+#'
+#' @return A data frame with one row per unique INSTCODE, containing:
+#'   - INSTCODE: Institute code
+#'   - Genesys_records: Number of records in Genesys
+#'   - WIEWS_records: Number of records in WIEWS
+#'   - ORGANIZATIONTYPE: Type of organization (from `institute_names_no_syn`)
+#'   - EURISCO: Logical, TRUE if present in EURISCO
+#'   - keep: "Genesys" or "WIEWS" based on selection logic (or NA)
+#'
+#' @details
+#' The function applies the following selection logic for the `keep` column:
+#'   - If ORGANIZATIONTYPE is "CGIAR" and Genesys has records, select "Genesys".
+#'   - If present in EURISCO and WIEWS has records, select "WIEWS".
+#'   - Otherwise, select the source with more records.
+#'   - If both have zero records, `keep` is NA.
+#'
+#' @examples
+#' # Example usage:
+#' # result <- select_data_source(Genesys_new15crops, WIEWS_new15crops, institute_names_no_syn, eurisco_path)
+#'
+#' @import dplyr
+#' @import readxl
+#' @export
 select_data_source <- function(Genesys_new15crops, WIEWS_new15crops, institute_names_no_syn, eurisco_path) {
   # Load EURISCO list
   eurisco_list <- readxl::read_excel(eurisco_path)
   eurisco_codes <- unique(eurisco_list$INSTCODE)
-  
+
   # Count records per INSTCODE in Genesys
   genesys_counts <- Genesys_new15crops %>%
-    group_by(INSTCODE) %>%
-    summarise(Genesys_records = n(), .groups = "drop")
-  
+    dplyr::group_by(INSTCODE) %>%
+    dplyr::summarise(Genesys_records = dplyr::n(), .groups = "drop")
+
   # Count records per INSTCODE in WIEWS
   wiews_counts <- WIEWS_new15crops %>%
-    group_by(INSTCODE) %>%
-    summarise(WIEWS_records = n(), .groups = "drop")
-  
+    dplyr::group_by(INSTCODE) %>%
+    dplyr::summarise(WIEWS_records = dplyr::n(), .groups = "drop")
+
   # Get all unique INSTCODEs from both sources
   all_instcodes <- union(genesys_counts$INSTCODE, wiews_counts$INSTCODE) %>% as.data.frame()
   colnames(all_instcodes) <- "INSTCODE"
-  
+
   # Merge counts
   summary_table <- all_instcodes %>%
-    left_join(genesys_counts, by = "INSTCODE") %>%
-    left_join(wiews_counts, by = "INSTCODE")
-  
+    dplyr::left_join(genesys_counts, by = "INSTCODE") %>%
+    dplyr::left_join(wiews_counts, by = "INSTCODE")
+
   # Replace NA with 0 for counts
   summary_table$Genesys_records[is.na(summary_table$Genesys_records)] <- 0
   summary_table$WIEWS_records[is.na(summary_table$WIEWS_records)] <- 0
-  
-  # Assign organization type using  function assign_org_type
+
+  # Assign organization type using function assign_org_type
   summary_table <- assign_org_type(summary_table, institute_names_no_syn)
-  
+
   # Add EURISCO column
   summary_table$EURISCO <- summary_table$INSTCODE %in% eurisco_codes
-  
+
   # Logic for keep column
   summary_table <- summary_table %>%
-    mutate(
-      keep = case_when(
+    dplyr::mutate(
+      keep = dplyr::case_when(
         ORGANIZATIONTYPE == "CGIAR" & Genesys_records > 0 ~ "Genesys",
         EURISCO & WIEWS_records > 0 ~ "WIEWS",
         Genesys_records > WIEWS_records ~ "Genesys",
@@ -49,10 +81,10 @@ select_data_source <- function(Genesys_new15crops, WIEWS_new15crops, institute_n
         TRUE ~ NA_character_
       )
     )
-  
+
   # Optionally, select relevant columns
   summary_table <- summary_table %>%
-    select(INSTCODE, Genesys_records, WIEWS_records, ORGANIZATIONTYPE, EURISCO, keep)
-  
+    dplyr::select(INSTCODE, Genesys_records, WIEWS_records, ORGANIZATIONTYPE, EURISCO, keep)
+
   return(summary_table)
 }
