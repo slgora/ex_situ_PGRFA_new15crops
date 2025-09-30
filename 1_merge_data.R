@@ -19,7 +19,7 @@ library(rlang)
 ########### Read in all database data for all crops ################################################
 BGCI_new15crops <- read_csv("../../GCCSmetricsII/Data/BGCIPlantSearch_data/BGCI_new15crops_unformatted.csv")
 WIEWS_new15crops <- read_csv("../../GCCSmetricsII/Data/FAO_WIEWS/Passport_data/all_crops_aggregated/WIEWS_new15crops.csv")
-Genesys_new15crops <- read_csv("../../GCCSmetricsII/Data/Genesys/Data_aggregated_all_selected_GCCS/Genesys_new15crops_unformatted.csv")
+Genesys_new15crops <- read_excel("../../GCCSmetricsII/Data/Genesys/Data_aggregated_all_selected_GCCS/Genesys_data_08_13_25.xlsx")
 
 ##### read file with country codes, I added na.strings to resolve the problem with NA for Namibia becoming a NaN value
 geo_names <- read_csv("../../GCCSmetricsII/Data_processing/Support_files/Geographical/geo_names.csv", na = c("", "-"))
