@@ -171,6 +171,10 @@ Genesys_new15crops$fullTaxa <- trimws(paste(Genesys_new15crops$GENUS, Genesys_ne
 Genesys_new15crops <- Genesys_new15crops %>%
   mutate(ACCENUMB = str_replace_all(ACCENUMB, " ", ""))
 
+# delete 2 INSTCODEs of blank data, mis-formatted rows in raw file (data not recoverable)
+Genesys_new15crops2 <- Genesys_new15crops[
+  !(Genesys_new15crops$INSTCODE %in% c('Macedonia"', 'From the Inebolu bazar."')),]                          
+                                 
 ####################################################################################################
 ##### CREATE SELECTION DATA SOURCES TABLE #####
 source("Functions/Select_data_source.R")
