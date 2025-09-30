@@ -48,15 +48,18 @@ names(BGCI_new15crops)[names(BGCI_new15crops) == 'Submitted Name'] <- 'Submitted
 names(BGCI_new15crops)[names(BGCI_new15crops) == 'Ex Situ Site GardenSearch ID'] <- 'ex_situ_site_gardenSearch_ID' #added
 BGCI_new15crops <- cbind(BGCI_new15crops, data_source = "BGCI") # Add field: data source
 
+##### correcting manually to remove quotes
+BGCI_new15crops$SubmittedName <- gsub('[\\(\\)\"]', '', BGCI_new15crops$SubmittedName)
+
+# when  fullTaxa is empty fill it with SubmittedName
+BGCI_new15crops <- BGCI_new15crops %>%
+  mutate(fullTaxa = ifelse(is.na(fullTaxa) | fullTaxa == "", SubmittedName, fullTaxa))
+
 # Separate fields: fullSciName, still have fullTaxa (which is the fullSciName standardized by BGCI )
 # Split the "fullSciName" column into "genus" and "species" without removing "fullSciName"
 BGCI_new15crops <- BGCI_new15crops %>%
   mutate(GENUS   = word(fullTaxa, 1),  # Extract the first word (genus)
          SPECIES = word(fullTaxa, 2))  # Extract the second word (species)
-
-# when  fullTaxa is empty fill it with SubmittedName
-BGCI_new15crops <- BGCI_new15crops %>%
-  mutate(fullTaxa = ifelse(is.na(fullTaxa) | fullTaxa == "", SubmittedName, fullTaxa))
 
 ### Encode all fields relevant to storage fields
 BGCI_new15crops['Germplasm, seed'][BGCI_new15crops['Germplasm, seed'] == 1] <- 10
