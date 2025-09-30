@@ -5,7 +5,7 @@ library(httr)
 library(jsonlite)
 
 # read dataset
-df = read.csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_df.csv", header = TRUE )
+df = read.csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/gen_wiews_new15_df.csv", header = TRUE )
 
 # combine GENUS + SPECIES + SPAUTHOR to account for the taxa author in the input name
 df <- df %>% unite("fullTaxa2", GENUS, SPECIES, SPAUTHOR, sep = " ", na.rm = TRUE)
@@ -60,7 +60,7 @@ taxa_standardized_df <- taxa_standardized_df %>%
 
 # save table with results from both WFO and GRIN
 df_save_results <- apply(taxa_standardized_df,2,as.character)
-write.csv(df_save_results, '../../GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_29/gen_wiews_new15crops_standardized_taxa2025_09_29_2.csv', row.names = FALSE)
+write.csv(df_save_results, '../../GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_29/gen_wiews_new15crops_standardized_taxa2025_09_30.csv', row.names = FALSE)
 
 
 ############ END SCRIPT ##############
