@@ -178,6 +178,8 @@ selection_data_sources <- select_data_source(
   institute_names_no_syn = institute_names_no_syn,
   eurisco_path = "../../GCCSmetricsII/Data_processing/Support_files/Source_selection/EURISCO_instcodes.xlsx"
 )
+#save selection data sources table
+write.csv(selection_data_sources, "../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/selection_data_sources.csv", row.names = FALSE)
 
 # Use selection_data_sources to filter main data
 genesys_keep_inst <- selection_data_sources %>% filter(keep == "Genesys") %>% pull(INSTCODE)
