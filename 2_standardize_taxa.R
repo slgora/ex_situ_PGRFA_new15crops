@@ -68,11 +68,11 @@ write.csv(df_save_results, '../../GCCSmetricsII/Data_processing/2_standardize_ta
 source("Functions/Assign_crop_strategy.R") # import fucntion, assign_crop_strategy
 
 # Read in the crop list for new 15 crops Excel file
-crops <- read_excel("G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx")
+crops <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx")
 # Read in standardized taxa table
-gen_wiews_new15_standardized_taxa <- read_csv("G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_30/gen_wiews_new15crops_standardized_taxa2025_09_30.csv")
+gen_wiews_new15_standardized_taxa <- read_csv("../../GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_30/gen_wiews_new15crops_standardized_taxa2025_09_30.csv")
 # read in tomato species sheet from the croplist
-tomato_species <- read_excel("G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx", sheet = "tomato genepool")$Species
+tomato_species <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx", sheet = "tomato genepool")$Species
 
 # Keep only genus and species from standardized WFO output name
 gen_wiews_new15_standardized_taxa$output_name_WFO_base <-
@@ -85,6 +85,6 @@ gen_wiews_new15_standardized_taxa2 <- assign_crop_strategy(
   "output_name_WFO",
   tomato_species)
 #save
-write.csv(gen_wiews_new15_standardized_taxa2, 'G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_30/gen_wiews_new15crops_standardized_taxa2025_09_30_cropstrategy.csv', row.names = FALSE)
+write.csv(gen_wiews_new15_standardized_taxa2, '../../GCCSmetricsII/Data_processing/2_standardize_taxa/2025_09_30/gen_wiews_new15crops_standardized_taxa2025_09_30_cropstrategy.csv', row.names = FALSE)
 
 ############ END SCRIPT ##############
