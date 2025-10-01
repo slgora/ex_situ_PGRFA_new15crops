@@ -24,7 +24,6 @@
 #' @details
 #' The function applies the following selection logic for the `keep` column:
 #'   - If ORGANIZATIONTYPE is "CGIAR" and Genesys has records, select "Genesys".
-#'   - If present in EURISCO and WIEWS has records, select "WIEWS".
 #'   - If Genesys has more records than WIEWS, select "Genesys".
 #'   - If WIEWS has more records than Genesys, select "WIEWS".
 #'   - If both record counts are equal and nonzero, and not CGIAR or in EURISCO, select "Genesys".
@@ -41,42 +40,41 @@ select_data_source <- function(Genesys_new15crops, WIEWS_new15crops, institute_n
   # Load EURISCO list
   eurisco_list <- readxl::read_excel(eurisco_path)
   eurisco_codes <- unique(eurisco_list$INSTCODE)
-  
+
   # Count records per INSTCODE in Genesys
   genesys_counts <- Genesys_new15crops %>%
     dplyr::group_by(INSTCODE) %>%
     dplyr::summarise(Genesys_records = dplyr::n(), .groups = "drop")
-  
+
   # Count records per INSTCODE in WIEWS
   wiews_counts <- WIEWS_new15crops %>%
     dplyr::group_by(INSTCODE) %>%
     dplyr::summarise(WIEWS_records = dplyr::n(), .groups = "drop")
-  
+
   # Get all unique INSTCODEs from both sources
   all_instcodes <- union(genesys_counts$INSTCODE, wiews_counts$INSTCODE) %>% as.data.frame()
   colnames(all_instcodes) <- "INSTCODE"
-  
+
   # Merge counts
   summary_table <- all_instcodes %>%
     dplyr::left_join(genesys_counts, by = "INSTCODE") %>%
     dplyr::left_join(wiews_counts, by = "INSTCODE")
-  
+
   # Replace NA with 0 for counts
   summary_table$Genesys_records[is.na(summary_table$Genesys_records)] <- 0
   summary_table$WIEWS_records[is.na(summary_table$WIEWS_records)] <- 0
-  
+
   # Assign organization type using function assign_org_type
   summary_table <- assign_org_type(summary_table, institute_names_no_syn)
-  
+
   # Add EURISCO column
   summary_table$EURISCO <- summary_table$INSTCODE %in% eurisco_codes
-  
+
   # Logic for keep column
   summary_table <- summary_table %>%
     dplyr::mutate(
       keep = dplyr::case_when(
         ORGANIZATIONTYPE == "CGIAR" & Genesys_records > 0 ~ "Genesys",
-        EURISCO & WIEWS_records > 0 ~ "WIEWS",
         Genesys_records > WIEWS_records ~ "Genesys",
         WIEWS_records > Genesys_records ~ "WIEWS",
         Genesys_records == WIEWS_records & Genesys_records > 0 ~ "Genesys",
@@ -84,10 +82,10 @@ select_data_source <- function(Genesys_new15crops, WIEWS_new15crops, institute_n
         TRUE ~ NA_character_
       )
     )
-  
+
   # Optionally, select relevant columns
   summary_table <- summary_table %>%
     dplyr::select(INSTCODE, Genesys_records, WIEWS_records, ORGANIZATIONTYPE, EURISCO, keep)
-  
+
   return(summary_table)
 }
