@@ -80,10 +80,11 @@ BGCI_new15crops <- select(BGCI_new15crops, -c('Germplasm, seed', "Germplasm, pla
 # Fields we want to keep
 BGCI_new15crops <- subset(BGCI_new15crops, select = c(data_source, fullTaxa, ex_situ_site_gardenSearch_ID, GENUS, SPECIES, STORAGE ))
 # Note: you need to create folder DATE_OF_RUN before running the following line of code
-write.csv(BGCI_new15crops, "../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/BGCI_new15crops_processed.csv", row.names = FALSE)
+write.csv(BGCI_new15crops, "../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/BGCI_new15crops_processed.csv", row.names = FALSE)
+
 
 ############### WIEWS: Data Cleaning ####################
-#rename all columns according to MCPD naming style, and select columns that are needed
+# Rename all columns according to MCPD naming style and select columns needed
 WIEWS_new15crops <- WIEWS_new15crops %>%
   rename(
     holdingCty     = `Country name`,
@@ -113,29 +114,39 @@ WIEWS_new15crops <- WIEWS_new15crops %>%
     DECLATITUDE, DECLONGITUDE, STORAGE, MLSSTAT, ACQDATE,
     COLLSRC, DOI
   )
-
 # Add field: data source
-WIEWS_new15crops <- cbind(WIEWS_new15crops, data_source = "WIEWS")
+WIEWS_new15crops <- WIEWS_new15crops %>% mutate(data_source = "WIEWS")
 
-## Standardize ACCENUMB field: remove blank/space between institute abbreviation and number
+# Standardize ACCENUMB field: remove blank/space between institute abbreviation and number
 WIEWS_new15crops  <- WIEWS_new15crops  %>%
   mutate(ACCENUMB = str_replace_all(ACCENUMB, " ", ""))
+                                 
+# Add a unique row identifier to preserve original rows during transformations
+WIEWS_new15crops <- WIEWS_new15crops %>% mutate(row_id = row_number())
 
-# Split the DUPLSITE column into separate rows, trim spaces, join with WIEWS_institute_IDs conversion table
+# Split the DUPLSITE column into separate rows, trim spaces
 WIEWS_new15crops <- WIEWS_new15crops %>%
   separate_rows(DUPLSITE, sep = ";") %>%
-  mutate(DUPLSITE = str_trim(DUPLSITE)) %>%
-  mutate(DUPLSITE = as.integer(DUPLSITE)) %>%
+  mutate(DUPLSITE = str_trim(DUPLSITE))
+
+# Convert DUPLSITE to integer (if all are numeric; otherwise keep as character)
+WIEWS_new15crops <- WIEWS_new15crops %>% mutate(DUPLSITE = as.integer(DUPLSITE))
+
+# Join with WIEWS_institute_IDs conversion table
+WIEWS_new15crops <- WIEWS_new15crops %>%
   left_join(WIEWS_institute_IDs, by = c("DUPLSITE" = "ID"), relationship = "many-to-one")
 
-# Combine rows back into a single row per original entry, with DUPLSITE and WIEWS_INSTCODE values separated by ";"
+# Recombine rows by row_id, collapsing DUPLSITE and WIEWS_INSTCODE with ";"
+retain_cols <- setdiff(names(WIEWS_new15crops), c("row_id", "DUPLSITE", "WIEWS_INSTCODE"))
 WIEWS_new15crops <- WIEWS_new15crops %>%
-  group_by(across(-c(DUPLSITE, WIEWS_INSTCODE))) %>%
+  group_by(row_id) %>%
   summarize(
-    DUPLSITE = paste(unique(DUPLSITE), collapse = ";"),
-    WIEWS_INSTCODE = paste(unique(WIEWS_INSTCODE), collapse = ";"),
+    across(all_of(retain_cols), first),
+    DUPLSITE = paste(na.omit(unique(DUPLSITE)), collapse = ";"),
+    WIEWS_INSTCODE = paste(na.omit(unique(WIEWS_INSTCODE)), collapse = ";"),
     .groups = 'drop'
-  )
+  ) %>%
+  select(-row_id)
 
 WIEWS_new15crops <- WIEWS_new15crops %>%
   select(-DUPLSITE) %>%                 #drop DUPLSITE column with wiews IDs
@@ -172,9 +183,10 @@ Genesys_new15crops <- Genesys_new15crops %>%
   mutate(ACCENUMB = str_replace_all(ACCENUMB, " ", ""))
 
 # delete 2 INSTCODEs of blank data, mis-formatted rows in raw file (data not recoverable)
-Genesys_new15crops2 <- Genesys_new15crops[
-  !(Genesys_new15crops$INSTCODE %in% c('Macedonia"', 'From the Inebolu bazar."')),]                          
-                                 
+Genesys_new15crops <- Genesys_new15crops[
+  !(Genesys_new15crops$INSTCODE %in% c('Macedonia"', 'From the Inebolu bazar."')),]
+
+
 ####################################################################################################
 ##### CREATE SELECTION DATA SOURCES TABLE #####
 source("Functions/Select_data_source.R")
@@ -228,7 +240,7 @@ gen_wiews_counts <- gen_wiews_new15_df %>%
   group_by(INSTCODE, GENUS, data_source) %>%
   summarize(n = n()) %>%
   arrange(desc(n))
-write.csv(gen_wiews_counts, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_counts_before_dropping_duplicates.csv', row.names = FALSE)
+write.csv(gen_wiews_counts, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/gen_wiews_new15_counts_before_dropping_duplicates.csv', row.names = FALSE)
 
 # Remove WIEWS rows where a Genesys row exists with the same (non-missing) DOI
 gen_wiews_new15_df <- gen_wiews_new15_df %>%
@@ -250,8 +262,8 @@ gen_wiews_new15_df = assign_org_type(gen_wiews_new15_df, institute_names_no_syn)
 
 # save results
 gen_wiews_new15_df$STORAGE <- as.character(gen_wiews_new15_df$STORAGE)
-write.csv(gen_wiews_new15_df, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/gen_wiews_new15_df.csv', row.names = FALSE)
-                                 
+write.csv(gen_wiews_new15_df, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/gen_wiews_new15_df.csv', row.names = FALSE)
+
 ################## GLIS data ########################################################################
 # GLIS data received from Plant Treaty
 all_glis_data <- read_tsv("../../GCCSmetricsII/Data/Plant_Treaty/GLIS/all_glis_data.csv")
@@ -283,7 +295,8 @@ all_glis_data$MLSSTAT = NA
 all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(1, 11, 12, 13, 14, 15), TRUE, all_glis_data$MLSSTAT)
 all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(0), FALSE, all_glis_data$MLSSTAT)
 # save results
-write.csv(all_glis_data, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/GLIS_new15_processed.csv', row.names = FALSE)
+write.csv(all_glis_data, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/GLIS_new15_processed.csv', row.names = FALSE)
+
 
 ################# SGSV data ##########################################################################
 source("Functions/Load_SGSV_data.R")
@@ -295,16 +308,16 @@ sgsv$INSTCODE <- trimws(sgsv$INSTCODE)
 sgsv$ID <- paste0(sgsv$ACCENUMB, sgsv$INSTCODE)
 sgsv <- sgsv[!duplicated(sgsv$ID), ]
 # save results
-write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/SGSV_new15crops_processed.csv', row.names = FALSE)
+write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/SGSV_new15crops_processed.csv', row.names = FALSE)
 
 ################# FAO WIEWS Indicator data ##########################################################################
-# read in FAO WIEWS indicator file and croplist_new15crops within function
+# read in FAO WIEWS indicator file and croplist_PG within function
 source("Functions/Load_WIEWS_indicator_data.R") # source function
 WIEWS_indicator_new15_proccessed <- process_wiews_indicator_data(
   wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
   croplist_path = "../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx"
 )
 # save results
-write.csv(WIEWS_indicator_new15_proccessed, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_29/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
+write.csv(WIEWS_indicator_new15_proccessed, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
 
 ############ END SCRIPT ##############
