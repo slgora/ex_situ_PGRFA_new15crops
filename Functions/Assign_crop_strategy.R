@@ -1,53 +1,70 @@
 #' Assign Crop Strategy Categorical Variable
 #'
-#' - Assigns 'Turkey berry' only if the binomial is 'Solanum torvum'.
-#' - Assigns 'Tomato' if the binomial (first two words, exact match after trimming/case) is in tomato_species.
-#' - Otherwise, assigns strategy using the genus (first word) and crops mapping, EXCEPT for Solanum, which gets NA.
-# 
-# # Read the Excel files for the croplist and the sheet that has tomato species
-# crops <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx")
-# tomato_species <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx", sheet = "tomato genepool")$Species
-# ---------------------------------------------------------------------------------------------------------------
+#' Assigns a categorical variable `Crop_strategy` to each row of a data frame based on plant taxonomic information and custom mappings.
+#'
+#' Assignment rules:
+#'   1. If the binomial (first two words, case-insensitive, trimmed) is "Solanum torvum", assign "Turkey berry".
+#'   2. If the binomial (first two words, as above) matches any in `tomato_species`, assign "Tomato".
+#'   3. If the genus (first word, case-insensitive, trimmed) is "Lycopersicon", assign "Tomato".
+#'   4. Otherwise, if the genus matches an entry in the `crops` mapping and is NOT "Solanum", assign the corresponding `CropStrategy`.
+#'   5. If none of the above, assign NA.
+#'
+#' @param df Data frame. Must contain a column with species/binomial names.
+#' @param crops Data frame. Must contain columns Genera_primary, Genera_synonyms, and CropStrategy.
+#' @param col_name Character. Name of the column in `df` containing the species/binomial names.
+#' @param tomato_species Character vector. List of binomials that should be classified as "Tomato".
+#'
+#' @return `df` with an added/modified column `Crop_strategy`.
+#' @examples
+#' # df <- data.frame(Species = c("Solanum lycopersicum", "Lycopersicon esculentum", "Solanum torvum"))
+#' # crops <- data.frame(Genera_primary = "Capsicum", Genera_synonyms = NA, CropStrategy = "Pepper")
+#' # assign_crop_strategy(df, crops, "Species", tomato_species = c("Solanum lycopersicum"))
 assign_crop_strategy <- function(df, crops, col_name, tomato_species) {
   library(dplyr)
   library(tidyr)
   library(stringr)
-
-  crops$genera <- trimws(ifelse(is.na(crops$Genera_primary), "", crops$Genera_primary)) %>%
-    paste(trimws(ifelse(is.na(crops$Genera_synonyms), "", crops$Genera_synonyms)), sep = ",")
-
+  
+  # Combine primary and synonym genera, separate to rows, and clean
   crops <- crops %>%
-    mutate(genera_list = strsplit(trimws(genera), ",")) %>%
-    unnest(genera_list) %>%
-    mutate(genera_list = trimws(genera_list)) %>%
-    filter(genera_list != "") %>%
-    distinct(genera_list, .keep_all = TRUE)
-
-  crop_strategy_dict <- setNames(as.character(crops$CropStrategy), crops$genera_list)
-
+    mutate(
+      genera_combined = paste(
+        trimws(coalesce(Genera_primary, "")),
+        trimws(coalesce(Genera_synonyms, "")),
+        sep = ","
+      )
+    ) %>%
+    mutate(genera_combined = trimws(genera_combined)) %>%
+    separate_rows(genera_combined, sep = ",") %>%
+    mutate(genera_combined = tolower(trimws(genera_combined))) %>%
+    filter(genera_combined != "") %>%
+    distinct(genera_combined, .keep_all = TRUE)
+  
+  crop_strategy_dict <- setNames(as.character(crops$CropStrategy), crops$genera_combined)
+  
+  # Helper: clean binomial (trim, remove trailing punctuation, lower)
   clean_binomial <- function(x) {
     x <- trimws(x)
     x <- sub("[[:punct:]]+$", "", x)
     tolower(x)
   }
-
-  # Get binomial (first two words), genus (first word)
-  binomial <- sapply(strsplit(trimws(df[[col_name]]), "\\s+"), function(x) paste(x[1:2], collapse = " "))
-  genus <- sapply(strsplit(trimws(df[[col_name]]), "\\s+"), `[`, 1)
-
+  
+  # Split to get binomial (first two words) and genus (first word)
+  name_parts <- strsplit(trimws(df[[col_name]]), "\\s+")
+  binomial <- sapply(name_parts, function(x) paste(x[1:2], collapse = " "))
+  genus <- sapply(name_parts, function(x) x[1])
+  
   binomial_clean <- clean_binomial(binomial)
   tomato_species_clean <- clean_binomial(tomato_species)
   genus_clean <- tolower(trimws(genus))
-  crop_strategy_names_clean <- tolower(trimws(names(crop_strategy_dict)))
-
-  # Assign Crop_strategy
+  
+  # Assign strategy with explicit Lycopersicon handling
   df$Crop_strategy <- dplyr::case_when(
     binomial_clean == clean_binomial("Solanum torvum") ~ "Turkey berry",
     binomial_clean %in% tomato_species_clean ~ "Tomato",
-    # Do NOT assign "Tomato" by genus match for Solanum or Lycopersicon
-    genus_clean %in% crop_strategy_names_clean & !(genus_clean %in% c("solanum", "lycopersicon")) ~ crop_strategy_dict[names(crop_strategy_dict)[match(genus_clean, crop_strategy_names_clean)]],
+    genus_clean == "lycopersicon" ~ "Tomato",
+    genus_clean %in% names(crop_strategy_dict) & genus_clean != "solanum" ~ crop_strategy_dict[genus_clean],
     TRUE ~ NA_character_
   )
-
+  
   return(df)
 }
