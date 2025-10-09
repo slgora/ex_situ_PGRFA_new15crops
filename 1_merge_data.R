@@ -23,8 +23,6 @@ Genesys_new15crops <- read_excel("../../GCCSmetricsII/Data/Genesys/Data_aggregat
 
 ##### read file with country codes, I added na.strings to resolve the problem with NA for Namibia becoming a NaN value
 geo_names <- read_csv("../../GCCSmetricsII/Data_processing/Support_files/Geographical/geo_names.csv", na = c("", "-"))
-## subset only the relevant column to join- 2 letter country code and the 3 letter abbreviation
-geo_names <- subset(geo_names, select = c(country2, country3))
 #####  file with institute names and FAO INSTCODE, some synonyms were added to the list
 institute_names <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/FAO_WIEWS/FAO_WIEWS_organizations_PG_with_synonyms.xlsx")
 names(institute_names)[names(institute_names) == 'WIEWS instcode'] <- 'INSTCODE'
@@ -152,6 +150,10 @@ WIEWS_new15crops <- WIEWS_new15crops %>%
 WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "Included"] <-  TRUE
 WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "Not included"] <-  FALSE
 WIEWS_new15crops <- WIEWS_new15crops %>% mutate(MLSSTAT = as.logical(MLSSTAT))
+
+# correct ORIGCTY field format
+source("../../GCCSmetricsII/Code/R_code/Functions/Correct_ORIGCTY.R")
+WIEWS_new15crops$ORIGCTY <- correct_origcty(WIEWS_new15crops$ORIGCTY)  
 
 ############### Genesys PGR: Data Read in and Cleaning ####################
 # select columns to keep
