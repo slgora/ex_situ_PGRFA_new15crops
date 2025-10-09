@@ -209,27 +209,6 @@ WIEWS_new15crops   <- WIEWS_new15crops %>% filter(INSTCODE %in% wiews_keep_inst)
 
 ####################################################################################################
 ## Combine Genesys and WIEWS data and Remove duplicates between Genesys and WIEWS, keep Genesys ##################################################
-#format for merge
-WIEWS_new15crops$SAMPSTAT <- as.numeric(WIEWS_new15crops$SAMPSTAT) #format SAMPSTAT
-Genesys_new15crops$SAMPSTAT <- as.numeric(Genesys_new15crops$SAMPSTAT)
-WIEWS_new15crops <- WIEWS_new15crops %>%   #format geo data 
-  rename(DECLONGITUDE_origin = DECLONGITUDE,
-         DECLATITUDE_origin  = DECLATITUDE) %>%
-  mutate(DECLONGITUDE = suppressWarnings(as.numeric(DECLONGITUDE_origin)),
-         DECLATITUDE  = suppressWarnings(as.numeric(DECLATITUDE_origin)))
-Genesys_new15crops <- Genesys_new15crops %>%   #format geo data
-  rename(DECLONGITUDE_origin = DECLONGITUDE,
-         DECLATITUDE_origin  = DECLATITUDE) %>%
-  mutate(DECLONGITUDE = suppressWarnings(as.numeric(DECLONGITUDE_origin)),
-         DECLATITUDE  = suppressWarnings(as.numeric(DECLATITUDE_origin)))
-Genesys_new15crops$DECLONGITUDE_origin <- as.character(Genesys_new15crops$DECLONGITUDE_origin) #keep origin fields in case of format error
-WIEWS_new15crops$DECLONGITUDE_origin  <- as.character(WIEWS_new15crops$DECLONGITUDE_origin)
-Genesys_new15crops$DECLATITUDE_origin <- as.character(Genesys_new15crops$DECLATITUDE_origin) #keep origin fields in case format error
-WIEWS_new15crops$DECLATITUDE_origin  <- as.character(WIEWS_new15crops$DECLATITUDE_origin)
-Genesys_new15crops$COLLSRC <- as.character(Genesys_new15crops$COLLSRC)  #format COLLSRC
-WIEWS_new15crops$COLLSRC  <- as.character(WIEWS_new15crops$COLLSRC)
-
-# bind rows
 gen_wiews_new15_df <- bind_rows(Genesys_new15crops, WIEWS_new15crops)
 gen_wiews_new15_df$ACCENUMB <- trimws(gen_wiews_new15_df$ACCENUMB)
 gen_wiews_new15_df$INSTCODE <- trimws(gen_wiews_new15_df$INSTCODE)
@@ -253,11 +232,11 @@ gen_wiews_new15_df <- gen_wiews_new15_df %>%
 gen_wiews_new15_df <- gen_wiews_new15_df[!duplicated(gen_wiews_new15_df$ID), ]  # drop duplicates but keep the first occurrence, in this case Genesys
 
 ####### correct country codes iso-codes
-source("Functions/Correct_country_codes.R")
+source("../../GCCSmetricsII/Code/R_code/Functions/Correct_country_codes.R")
 gen_wiews_new15_df = correct_country_codes(gen_wiews_new15_df, col = 'ORIGCTY')
 
 ####### assign organization type ############
-source("Functions/Assign_organization_status.R")
+source("../../GCCSmetricsII/Code/R_code/Functions/Assign_organization_status.R")
 gen_wiews_new15_df = assign_org_type(gen_wiews_new15_df, institute_names_no_syn)
 
 # save results
@@ -301,7 +280,7 @@ write.csv(all_glis_data, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_
 
 
 ################# SGSV data ##########################################################################
-source("Functions/Load_SGSV_data.R")
+source("../../GCCSmetricsII/Code/R_code/Functions/Load_SGSV_data.R")
 sgsv = load_SGSV_data('../../GCCSmetricsII/Data/SGSV/Deposits_all_genera_aggregated/SGSV_new15crops_unformatted.xlsx')
 
 # create uniqueID and drop duplicates
@@ -314,7 +293,7 @@ write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/SGS
 
 ################# FAO WIEWS Indicator data ##########################################################################
 # read in FAO WIEWS indicator file and croplist_PG within function
-source("Functions/Load_WIEWS_indicator_data.R") # source function
+source("../../GCCSmetricsII/Code/R_code/Functions/Load_WIEWS_indicator_data.R")                            
 WIEWS_indicator_new15_proccessed <- process_wiews_indicator_data(
   wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
   croplist_path = "../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx"
