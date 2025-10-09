@@ -5,14 +5,14 @@
 #' - Average number of recipient countries per year
 #' - Gini index of sample distribution across recipient regions
 #'
-#' The function merges cleaned transfer records with crop strategy metadata and regional classifications,
-#' then outputs a summary table with key distribution metrics per crop strategy.
+#' The function reads and processes all necessary files internally.
 #'
 #' @param croplist_file Path to Excel file containing selected crops and strategy metadata
 #' @param out_path Path where the output Excel file should be saved
-#' @param transfers_2012_2019 Data frame of ITPGRFA transfer records from 2012–2019
-#' @param transfers_2019_2021 Data frame of ITPGRFA transfer records from 2019–2021
-#' @param countries_regions Data frame mapping ISO3 country codes to recipient regions
+#' @param transfers_2012_2019_file Path to ITPGRFA transfer records from 2012–2019 (Excel)
+#' @param transfers_2019_2021_file Path to ITPGRFA transfer records from 2019–2021 (Excel)
+#' @param countries_regions_file Path to Excel file mapping ISO3 country codes to recipient regions
+#' @param unique_crop_dirty_file Path to Excel file mapping dirty crop names to crop strategies (for 2019–2021)
 #'
 #' @return A data frame with Treaty germplasm distribution metrics per crop strategy, also written to Excel
 #'
@@ -20,17 +20,18 @@
 #' transfers_metrics(
 #'   croplist_file = "input/crop_list.xlsx",
 #'   out_path = "output/table4_metrics.xlsx",
-#'   transfers_2012_2019 = df_2012_2019,
-#'   transfers_2019_2021 = df_2019_2021,
-#'   countries_regions = region_lookup
+#'   transfers_2012_2019_file = "input/ITPGRFA_MLSDataStore2022_7_1.xlsx",
+#'   transfers_2019_2021_file = "input/Updated_transfers_retrieved2025_09_18.xlsx",
+#'   countries_regions_file = "input/countries_in_regions.xlsx",
+#'   unique_crop_dirty_file = "input/Transfers_2019_2021_unique_crop_dirty.xlsx"
 #' )
-#' 
 transfers_metrics <- function(
     croplist_file,
     out_path,
-    transfers_2012_2019,
-    transfers_2019_2021,
-    countries_regions
+    transfers_2012_2019_file,
+    transfers_2019_2021_file,
+    countries_regions_file,
+    unique_crop_dirty_file
 ) {
   # Load required libraries
   library(dplyr)
@@ -39,6 +40,12 @@ transfers_metrics <- function(
   library(tidyr)
   library(writexl)
   library(ineq)
+  
+  # Read in data files
+  transfers_2012_2019 <- read_excel(transfers_2012_2019_file)
+  transfers_2019_2021 <- read_excel(transfers_2019_2021_file, skip = 2)
+  countries_regions <- read_excel(countries_regions_file)
+  unique_crop_dirty <- read_excel(unique_crop_dirty_file)
   
   # Clean 2015–2018 data
   transfers_2015_2018 <- transfers_2012_2019 %>%
@@ -71,7 +78,16 @@ transfers_metrics <- function(
     rename(Crop_strategy = CropStrategy)
   
   # Clean 2019–2021 transfers
-  transfers_2019_2021 <- transfers_2019_2021 %>%
+  transfers_2019_2021 <- transfers_2019_2021  %>%
+    rename(provider_ISO3         = `ISO3...1`,
+           provider_country_name = `Provider country`,
+           crop_dirty            = Crop,
+           year                  = Year,
+           number_of_samples     = `# Samples`,
+           recipient_ISO3        = `ISO3...6`,
+           recipient_country_name= `Recipient country`) %>%
+    left_join(unique_crop_dirty %>% select(crop_dirty, crop_strategy), by = "crop_dirty") %>%
+    filter(!is.na(crop_strategy)) %>%
     select(crop_strategy, year, provider_ISO3, provider_country_name, recipient_ISO3, recipient_country_name, number_of_samples) %>%
     rename(Crop_strategy = crop_strategy)
   
