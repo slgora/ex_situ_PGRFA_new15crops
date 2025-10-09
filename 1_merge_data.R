@@ -112,41 +112,37 @@ WIEWS_new15crops <- WIEWS_new15crops %>%
     holdingCty, INSTCODE, ACCENUMB, fullTaxa, GENUS, SPECIES,
     CROPNAME, ORIGCTY, SAMPSTAT, DUPLSITE, DUPLINSTNAME,
     DECLATITUDE, DECLONGITUDE, STORAGE, MLSSTAT, ACQDATE,
-    COLLSRC, DOI
-  )
-# Add field: data source
-WIEWS_new15crops <- WIEWS_new15crops %>% mutate(data_source = "WIEWS")
+    COLLSRC, DOI)
 
-# Standardize ACCENUMB field: remove blank/space between institute abbreviation and number
+# Add field: data source
+WIEWS_new15crops <- cbind(WIEWS_new15crops, data_source = "WIEWS")
+
+# format to MCPD standard for merging with Genesys
+WIEWS_new15crops$SAMPSTAT <- as.numeric(substr(WIEWS_new15crops$SAMPSTAT, 1, 3)) # convert SAMPSTAT in MCPD standard
+WIEWS_new15crops$COLLSRC <- as.numeric(substr(WIEWS_new15crops$COLLSRC, 1, 2))  # convert COLLSRC following MCPD standard
+# convert STORAGE in MCPD format
+WIEWS_new15crops$STORAGE <- sapply(
+  str_extract_all(WIEWS_new15crops$STORAGE, "\\d+(?=\\))"),
+  function(x) paste(x, collapse = ";"))
+
+## Standardize ACCENUMB field: remove blank/space between institute abbreviation and number
 WIEWS_new15crops  <- WIEWS_new15crops  %>%
   mutate(ACCENUMB = str_replace_all(ACCENUMB, " ", ""))
-                                 
-# Add a unique row identifier to preserve original rows during transformations
-WIEWS_new15crops <- WIEWS_new15crops %>% mutate(row_id = row_number())
 
-# Split the DUPLSITE column into separate rows, trim spaces
+# Split the DUPLSITE column into separate rows, trim spaces, join with WIEWS_institute_IDs conversion table
 WIEWS_new15crops <- WIEWS_new15crops %>%
   separate_rows(DUPLSITE, sep = ";") %>%
-  mutate(DUPLSITE = str_trim(DUPLSITE))
-
-# Convert DUPLSITE to integer (if all are numeric; otherwise keep as character)
-WIEWS_new15crops <- WIEWS_new15crops %>% mutate(DUPLSITE = as.integer(DUPLSITE))
-
-# Join with WIEWS_institute_IDs conversion table
-WIEWS_new15crops <- WIEWS_new15crops %>%
+  mutate(DUPLSITE = str_trim(DUPLSITE)) %>%
+  mutate(DUPLSITE = as.integer(DUPLSITE)) %>%
   left_join(WIEWS_institute_IDs, by = c("DUPLSITE" = "ID"), relationship = "many-to-one")
 
-# Recombine rows by row_id, collapsing DUPLSITE and WIEWS_INSTCODE with ";"
-retain_cols <- setdiff(names(WIEWS_new15crops), c("row_id", "DUPLSITE", "WIEWS_INSTCODE"))
+# Combine rows back into a single row per original entry, with DUPLSITE and WIEWS_INSTCODE values separated by ";"
 WIEWS_new15crops <- WIEWS_new15crops %>%
-  group_by(row_id) %>%
+  group_by(across(-c(DUPLSITE, WIEWS_INSTCODE))) %>%
   summarize(
-    across(all_of(retain_cols), first),
-    DUPLSITE = paste(na.omit(unique(DUPLSITE)), collapse = ";"),
-    WIEWS_INSTCODE = paste(na.omit(unique(WIEWS_INSTCODE)), collapse = ";"),
-    .groups = 'drop'
-  ) %>%
-  select(-row_id)
+    DUPLSITE = paste(unique(DUPLSITE), collapse = ";"),
+    WIEWS_INSTCODE = paste(unique(WIEWS_INSTCODE), collapse = ";"),
+    .groups = 'drop')
 
 WIEWS_new15crops <- WIEWS_new15crops %>%
   select(-DUPLSITE) %>%                 #drop DUPLSITE column with wiews IDs
@@ -186,7 +182,7 @@ Genesys_new15crops <- Genesys_new15crops %>%
 Genesys_new15crops <- Genesys_new15crops[
   !(Genesys_new15crops$INSTCODE %in% c('Macedonia"', 'From the Inebolu bazar."')),]
 
-
+  
 ####################################################################################################
 ##### CREATE SELECTION DATA SOURCES TABLE #####
 source("../../GCCSmetricsII/Code/R_code/Functions/Select_data_source.R")
