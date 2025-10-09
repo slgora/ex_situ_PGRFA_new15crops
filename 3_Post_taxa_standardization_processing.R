@@ -82,7 +82,7 @@ GLIS_processed <- assign_crop_strategy(
 BGCI_processed <- assign_crop_strategy(
   BGCI_processed,
   crops,
-  "fullTaxa",   # or standardized taxa field if filled out properly.... SG still working
+  "Standardized_taxa",
   tomato_species) %>%
   filter(!is.na(Crop_strategy))
 
