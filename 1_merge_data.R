@@ -189,7 +189,7 @@ Genesys_new15crops <- Genesys_new15crops[
 
 ####################################################################################################
 ##### CREATE SELECTION DATA SOURCES TABLE #####
-source("Functions/Select_data_source.R")
+source("../../GCCSmetricsII/Code/R_code/Functions/Select_data_source.R")
 
 selection_data_sources <- select_data_source(
   Genesys_new15crops = Genesys_new15crops,
