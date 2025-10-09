@@ -153,8 +153,8 @@ WIEWS_new15crops <- WIEWS_new15crops %>%
   rename(DUPLSITE = WIEWS_INSTCODE)  # Rename WIEWS_INSTCODE to DUPLSITE
 
 # recode MLSSTAT as TRUE and FALSE
-WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "I"] <-  TRUE
-WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "N"] <-  FALSE
+WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "Included"] <-  TRUE
+WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "Not included"] <-  FALSE
 WIEWS_new15crops <- WIEWS_new15crops %>% mutate(MLSSTAT = as.logical(MLSSTAT))
 
 ############### Genesys PGR: Data Read in and Cleaning ####################
