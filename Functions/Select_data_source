@@ -64,17 +64,4 @@ select_data_source <- function(
         TRUE ~ NA_character_
       )
     )
-
-  # --- Select only relevant columns ---
-  summary_table %>%
-    select(INSTCODE, Genesys_records, WIEWS_records, ORGANIZATIONTYPE, EURISCO, keep)
-}
-
-selection_data_sources <- select_data_source(
-  Genesys_new15crops = Genesys_new15crops,
-  WIEWS_new15crops = WIEWS_new15crops,
-  institute_names_no_syn = institute_names_no_syn,
-  eurisco_path = "../../GCCSmetricsII/Data_processing/Support_files/Source_selection/EURISCO_instcodes.xlsx"
-)
-
  
