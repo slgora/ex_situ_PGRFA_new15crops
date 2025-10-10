@@ -28,8 +28,8 @@ GLIS_processed <- GLIS_processed %>%
 
 #### add standardized_taxa column here when the manual vetting is complete and standardization_table becomes available, code to be tested#######
 #load standardization table 
-# testing (update file path when standardization table is finalized and moved to processing docs)
-table_standardization <- read_excel("genwiews_new15crops_standardized_taxa2025_10_03_cropstrategy2.xlsx")
+# testing 
+table_standardization <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/Taxa_standardization/standardization_table_new15_2025_10_03.xlsx")
 
 # Replace tabs with space in input_name
 table_standardization$input_name <- gsub("\t", " ", table_standardization$input_name)
