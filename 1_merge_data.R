@@ -151,6 +151,10 @@ WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "Included"] <-  TRUE
 WIEWS_new15crops$MLSSTAT[WIEWS_new15crops$MLSSTAT == "Not included"] <-  FALSE
 WIEWS_new15crops <- WIEWS_new15crops %>% mutate(MLSSTAT = as.logical(MLSSTAT))
 
+# For 2 special cases, remove institute name from DOI field (no suitable field to re-assign)
+WIEWS_new15crops$DOI[WIEWS_new15crops$DOI == "Bangladesh Agricultural Research Institute" |
+                       WIEWS_new15crops$DOI == "Institut National de l'Environnement et de Recherches Agricoles"] <- ""
+  
 # correct ORIGCTY field format
 source("../../GCCSmetricsII/Code/R_code/Functions/Correct_ORIGCTY.R")
 WIEWS_new15crops$ORIGCTY <- correct_origcty(WIEWS_new15crops$ORIGCTY)  
