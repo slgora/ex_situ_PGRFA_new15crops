@@ -251,21 +251,26 @@ all_glis_data <- read_tsv("../../GCCSmetricsII/Data/Plant_Treaty/GLIS/all_glis_d
 
 #rename all columns according to MCPD naming style, and select columns that are needed
 all_glis_data <- all_glis_data %>%
-  transmute(
-    DOI          = doi,
-    ACCENUMB     = holdsid,
-    INSTCODE     = holdwiews,
-    GENUS        = genus,
-    SPECIES      = species,
-    SPAUTH       = spauth,
-    SUBTAXA      = subtaxa,
-    STAUTH       = stauth,
-    SAMPSTAT     = biostatus,
-    ORIGCTY      = holdcountry,
-    DECLATITUDE  = colllat,
-    DECLONGITUDE = colllon,
-    MLS          = as.numeric(ifelse(mlsstatus %in% c("", "(null)", NA), NA, mlsstatus)),
-    date         = date)
+transmute(
+DOI = doi,
+ACCENUMB = holdsid,
+INSTCODE = holdwiews,
+GENUS = genus,
+SPECIES = species,
+SPAUTH = spauth,
+SUBTAXA = subtaxa,
+STAUTH = stauth,
+SAMPSTAT = biostatus,
+ORIGCTY = holdcountry,
+DECLATITUDE = colllat,
+DECLONGITUDE = colllon,
+MLS = as.numeric(ifelse(mlsstatus %in% c("", "(null)", NA), NA, mlsstatus)),
+date = date,
+HISTORICAL = historical
+)
+
+drop all historical records from GLIS dataset
+all_glis_data <- all_glis_data[!(all_glis_data$HISTORICAL == "y"), ]
 
 # Replace all (null) with blank in every column
 all_glis_data <- all_glis_data %>%
