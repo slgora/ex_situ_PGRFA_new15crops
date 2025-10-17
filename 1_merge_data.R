@@ -266,24 +266,26 @@ DECLATITUDE = colllat,
 DECLONGITUDE = colllon,
 MLS = as.numeric(ifelse(mlsstatus %in% c("", "(null)", NA), NA, mlsstatus)),
 date = date,
-HISTORICAL = historical
-)
+HISTORICAL = historical)
 
-drop all historical records from GLIS dataset
+# remove duplicate records in all_glis_data based on DOI, keeping only the first occurrence of each DOI
+all_glis_data <- all_glis_data[!duplicated(all_glis_data$DOI), ]
+  
+# drop all historical records from GLIS dataset
 all_glis_data <- all_glis_data[!(all_glis_data$HISTORICAL == "y"), ]
 
-# Replace all (null) with blank in every column
+# replace all (null) with blank in every column
 all_glis_data <- all_glis_data %>%
   mutate(across(everything(), ~replace(., . == "(null)", "")))
-
+# drop rows where INSTCODE is NA or blank
+all_glis_data <- all_glis_data %>% filter(!is.na(INSTCODE) & INSTCODE != "")  
+  
 #generate MLSSTAT variable, used later to compute metrics on # of accessions included in the MLS
 all_glis_data$MLSSTAT = NA
 all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(1, 11, 12, 13, 14, 15), TRUE, all_glis_data$MLSSTAT)
-all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(0), FALSE, all_glis_data$MLSSTAT)
-# drop rows where INSTCODE is null
-all_glis_data <- all_glis_data[!is.na(all_glis_data$INSTCODE), ]                                 
+all_glis_data$MLSSTAT <- ifelse(all_glis_data$MLS %in% c(0), FALSE, all_glis_data$MLSSTAT)                         
 # save results
-write.csv(all_glis_data, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_06/GLIS_new15_processed.csv', row.names = FALSE)
+write.csv(all_glis_data, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_17/GLIS_new15_processed.csv', row.names = FALSE)
 
 
 ################# SGSV data ##########################################################################
