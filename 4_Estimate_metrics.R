@@ -66,25 +66,26 @@ country_count <- combined_allcrops %>%
 
 # 6.a and 6.b Accessions from primary & secondary regions of diversity
 primary_region_metric <- combined_allcrops %>%
+  add_count(Crop_strategy, name = "primaryregions_total_records") %>%
   filter(SAMPSTAT <= 399 | SAMPSTAT == 999 | is.na(SAMPSTAT)) %>%
-  percent_summary(
-    Crop_strategy,
-    sum(fromPrimary_diversity_region, na.rm = TRUE),
-    primaryregions_total_records,
-    isinprimaryregion_perc
-  )
+  group_by(Crop_strategy, primaryregions_total_records) %>%
+  summarise(
+    count = sum(fromPrimary_diversity_region, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(isinprimaryregion_perc = round((count / primaryregions_total_records) * 100, 2))
 
 # 6.c and 6.d Diversity_regions_metric (primary + secondary regions)
 diversity_regions_metric <- combined_allcrops %>%
+  add_count(Crop_strategy, name = "total_accessions") %>%
   filter(SAMPSTAT <= 399 | SAMPSTAT == 999 | is.na(SAMPSTAT)) %>%
   group_by(Crop_strategy) %>%
   summarise(
     isindiversityregions_count = sum(fromPrimary_diversity_region, na.rm = TRUE) +
       sum(fromSecondary_diversity_region, na.rm = TRUE),
-    total_accessions = n(),
+    total_accessions = first(total_accessions),
     isindiversityregions_perc = round(100 * isindiversityregions_count / total_accessions, 2),
-    .groups = "drop"
-  )
+    .groups = "drop")
 
 # 7. accessions by org type,  and MLS accessions for organization type (A15 collection versus non-A15)
 combined_allcrops <- combined_allcrops %>% 
