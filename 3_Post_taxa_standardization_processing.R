@@ -6,7 +6,7 @@ crops <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/GCCS_Sele
 tomato_species <- read_excel("../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx", sheet = "tomato genepool")$Species
 combined_new15_df <- read_csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_01/gen_wiews_new15_df.csv")
 SGSV_allcrops <- read_csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_01/SGSV_new15crops_processed.csv")
-GLIS_processed <- read_csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_06/GLIS_new15_processed.csv")
+GLIS_processed <- read_csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_17/GLIS_new15_processed.csv")
 BGCI_processed <- read_csv("../../GCCSmetricsII/Data_processing/1_merge_data/2025_10_01/BGCI_new15crops_processed.csv")
 
 
@@ -103,5 +103,5 @@ combined_new15_df <- combined_new15_df %>%
 ##### save resulting datasets in folder: ../../Data_processing/3_post_taxa_standardization_processing/Resulting_datasets/
 write.csv(combined_new15_df, '../../GCCSmetricsII/Data_processing/3_post_taxa_standardization_processing/2025_10_07/combined_new15_df.csv', row.names = FALSE)
 write.csv(SGSV_allcrops, '../../GCCSmetricsII/Data_processing/3_post_taxa_standardization_processing/2025_10_07/SGSV_new15_processed.csv', row.names = FALSE)
-write.csv(GLIS_processed, '../../GCCSmetricsII/Data_processing/3_post_taxa_standardization_processing/2025_10_07/GLIS_new15_processed.csv', row.names = FALSE)
+write.csv(GLIS_processed, '../../GCCSmetricsII/Data_processing/3_post_taxa_standardization_processing/2025_10_17/GLIS_new15_processed.csv', row.names = FALSE)
 write.csv(BGCI_processed, '../../GCCSmetricsII/Data_processing/3_post_taxa_standardization_processing/2025_10_07/BGCI_new15_processed.csv', row.names = FALSE)
