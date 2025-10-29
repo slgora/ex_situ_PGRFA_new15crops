@@ -90,9 +90,9 @@ diversity_regions_metric <- combined_allcrops %>%
     isindiversityregions_perc = round(100 * isindiversityregions_count / total_accessions, 2),
     .groups = "drop")
 
-# 7. accessions by org type,  and MLS accessions for organization type (A15 collection versus non-A15)
+## 7. accessions by org type, and MLS accessions for organization type (A15 collection versus non-A15)
 combined_allcrops <- combined_allcrops %>% 
-  mutate( A15_collection = ifelse(ORGANIZATIONTYPE %in% c("CGIAR", "International"), TRUE, FALSE) )
+  mutate(A15_collection = ifelse(ORGANIZATIONTYPE %in% c("CGIAR", "A15"), TRUE, FALSE) )
 
 accessions_by_org_type <- combined_allcrops %>%
   group_by(Crop_strategy, A15_collection) %>%
@@ -102,18 +102,20 @@ accessions_by_org_type <- combined_allcrops %>%
   ungroup()
 
 mls_by_orgtype <- combined_allcrops %>%
-  mutate(A15_collection = ORGANIZATIONTYPE %in% c("CGIAR", "International")) %>%
+  mutate(A15_collection = ORGANIZATIONTYPE %in% c("CGIAR", "A15")) %>%
   group_by(Crop_strategy) %>%
   mutate(total_crop_records = n()) %>%
   group_by(Crop_strategy, A15_collection, total_crop_records) %>%
   summarise(
     count_includedmls = sum(MLSSTAT == TRUE, na.rm = TRUE),
     count_notincludedmls = sum(MLSSTAT == FALSE, na.rm = TRUE),
+    count_noMLSinformation = sum(is.na(MLSSTAT)),
     .groups = "drop"
   ) %>%
   mutate(
     percent_includedmls = round(100 * count_includedmls / total_crop_records, 2),
-    percent_notincludedmls = round(100 * count_notincludedmls / total_crop_records, 2)
+    percent_notincludedmls = round(100 * count_notincludedmls / total_crop_records, 2),
+    percent_noMLSinformation = round(100 * count_noMLSinformation / total_crop_records, 2)
   )
 
 # 8. Accessions in Annex I
