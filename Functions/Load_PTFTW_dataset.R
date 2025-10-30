@@ -9,29 +9,72 @@ library(writexl)
 #' Aggregates digital, trade, food supply, and research indicators for selected crops.
 #' Metrics include sum, average, and max values, grouped by Crop_strategy.
 #'
+#' Special-case behavior for Beet:
+#' - The croplist contains two PTFTW names that represent the same underlying entity:
+#'   "Beets" and "Sugar beets"
+#' - For most metrics we want to SUM values across PTFTW names that map to the same Crop_strategy.
+#' - For a handful of metrics that are duplicate (not additive) between Beets and Sugar beets,
+#'   the function selects a single representative value instead of summing. By default the
+#'   representative is chosen as the maximum of the available values (max of the two).
+#' - The metrics treated as single-value for the Beet strategy are:
+#'   * supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_gene
+#'   * supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_genome
+#'   * supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_nucleotide
+#'   * supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_protein
+#'   * supply-research_supply-research_supply_gbif-research_supply_gbif_taxon
+#'   * demand-varietal_release_fao_wiews-varietal_release_fao_wiews-varietal_release_fao_wiews_taxon
+#'   * demand-varietal_registrations_upov-varietal_registrations_upov-varietal_registrations_upov_taxon
+#'   * crop_use-public_interest-wikipedia_pageviews-taxon
+#'   * crop_use-research_significance-google_scholar-taxon
+#'   * crop_use-research_significance-pubmed_central-taxon
+#'
 #' @param indicator_file Path to PTFTW indicator CSV
 #' @param croplist Path to croplist Excel file
 #' @param out_path Optional path to save the output Excel file
 #' @return A data frame of aggregated indicators grouped by Crop_strategy
 process_PTFTW_metrics <- function(indicator_file, croplist, out_path = NULL) {
-  # Read inputs
   PTFTW_indicator <- read_csv(indicator_file)
   croplist_df <- read_excel(croplist)
-  
-  PTFTW_indicator <- PTFTW_indicator %>%
-    rename(PlantsthatFeedtheWorld_name = crop) %>%
-    mutate(PlantsthatFeedtheWorld_name = trimws(PlantsthatFeedtheWorld_name))
-  
-  # Join and clean
-  PTFTW_clean <- croplist_df %>%
-    filter(PlantsthatFeedtheWorld_name != "NA") %>%
+  PTFTW_indicator <- PTFTW_indicator %>% rename(PlantsthatFeedtheWorld_name = crop) %>% mutate(PlantsthatFeedtheWorld_name = trimws(PlantsthatFeedtheWorld_name))
+  # base-R expansion of combined names like "Beets, Sugar beets (2) names"
+  expand_names <- function(s) {
+    if (is.na(s) || trimws(as.character(s)) == "") return(NA_character_)
+    s <- as.character(s)
+    s <- gsub("\\s*\\(\\d+\\)\\s*names?\\s*$", "", s, perl = TRUE)
+    s <- gsub("\\s*\\(\\d+\\)\\s*$", "", s, perl = TRUE)
+    # protect "and other" phrases so they are not split (keeps "Leeks and other alliaceous vegetables" intact)
+    s <- gsub("(?i)\\s+and other\\s+", "__ANDOTHER__", s, perl = TRUE)
+    s <- gsub("\\s*( and | & |;|/|\\|)\\s*", ",", s, perl = TRUE)
+    s <- gsub("__ANDOTHER__", " and other ", s, fixed = TRUE)
+    parts <- trimws(unlist(strsplit(s, ",")))
+    parts[parts != ""]
+  }
+  croplist_df$PlantsthatFeedtheWorld_name <- as.character(croplist_df$PlantsthatFeedtheWorld_name)
+  lst <- lapply(croplist_df$PlantsthatFeedtheWorld_name, expand_names)
+  lens <- lengths(lst); keep <- which(lens > 0)
+  if (length(keep) == 0) croplist_expanded <- croplist_df[0, , drop = FALSE] else {
+    croplist_expanded <- croplist_df[rep(keep, times = lens[keep]), , drop = FALSE]
+    croplist_expanded$PlantsthatFeedtheWorld_name <- unlist(lst[keep], use.names = FALSE)
+    croplist_expanded <- croplist_expanded[!is.na(croplist_expanded$PlantsthatFeedtheWorld_name) & croplist_expanded$PlantsthatFeedtheWorld_name != "", , drop = FALSE]
+  }
+
+  # Ensure the Allium crop strategy is assigned to the specified PTFTW names
+  allium_names <- c("Onions", "Garlic", "Leeks and other alliaceous vegetables")
+  if ("CropStrategy" %in% names(croplist_expanded)) {
+    croplist_expanded$CropStrategy[croplist_expanded$PlantsthatFeedtheWorld_name %in% allium_names] <- "Allium"
+  } else {
+    croplist_expanded$CropStrategy <- NA_character_
+    croplist_expanded$CropStrategy[croplist_expanded$PlantsthatFeedtheWorld_name %in% allium_names] <- "Allium"
+  }
+
+  PTFTW_clean <- croplist_expanded %>%
     left_join(PTFTW_indicator, by = "PlantsthatFeedtheWorld_name") %>%
     rename(cropstrategy = CropStrategy,
            PTFTW_name   = PlantsthatFeedtheWorld_name,
            genus        = Genera_primary,
            fullTaxa     = Taxa_main)
-  
-  # Define columns
+
+  # columns lists
   sum_cols <- c(
     "supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_gene",
     "supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_genome",
@@ -57,7 +100,20 @@ process_PTFTW_metrics <- function(indicator_file, croplist, out_path = NULL) {
     "crop_use-research_significance-google_scholar-taxon",
     "crop_use-research_significance-pubmed_central-taxon"
   )
-  
+  # for Beet: treat these duplicated (Beets/Sugar beets) metrics as single-value (take max instead of sum)
+  special_single_cols <- c(
+    "supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_gene",
+    "supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_genome",
+    "supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_nucleotide",
+    "supply-digital_sequence_supply-digital_sequence_supply-digital_sequence_supply_protein",
+    "supply-research_supply-research_supply_gbif-research_supply_gbif_taxon",
+    "demand-varietal_release_fao_wiews-varietal_release_fao_wiews-varietal_release_fao_wiews_taxon",
+    "demand-varietal_registrations_upov-varietal_registrations_upov-varietal_registrations_upov_taxon",
+    "crop_use-public_interest-wikipedia_pageviews-taxon",
+    "crop_use-research_significance-google_scholar-taxon",
+    "crop_use-research_significance-pubmed_central-taxon"
+  )
+
   avg_cols <- c(
     "crop_use-faostat_equality_of_use-gini_food_supply-food_supply_kcal",
     "crop_use-faostat_equality_of_use-gini_food_supply-protein_supply_quantity_g",
@@ -82,7 +138,6 @@ process_PTFTW_metrics <- function(indicator_file, croplist, out_path = NULL) {
     "interdependence-faostat-trade-import_quantity_tonnes",
     "interdependence-faostat-trade-import_value_tonnes"
   )
-  
   max_cols <- c(
     "crop_use-faostat_count_countries-count_countries_food_supply-food_supply_kcal",
     "crop_use-faostat_count_countries-count_countries_food_supply-protein_supply_quantity_g",
@@ -96,23 +151,25 @@ process_PTFTW_metrics <- function(indicator_file, croplist, out_path = NULL) {
     "crop_use-faostat_count_countries-count_countries_trade-import_quantity_tonnes",
     "crop_use-faostat_count_countries-count_countries_trade-import_value_tonnes"
   )
-  
-  # Summarise safely and rename final output column
+
   PTFTW_metrics <- PTFTW_clean %>%
     group_by(cropstrategy) %>%
     summarise(
-      across(all_of(sum_cols), ~sum(.x, na.rm = TRUE)),
+      across(all_of(sum_cols), ~ {
+        if (identical(first(cropstrategy), "Beet") && cur_column() %in% special_single_cols) {
+          num <- suppressWarnings(as.numeric(.x))
+          if (all(is.na(num))) NA_real_ else max(num, na.rm = TRUE)
+        } else {
+          sum(.x, na.rm = TRUE)
+        }
+      }),
       across(all_of(avg_cols), ~mean(.x, na.rm = TRUE)),
       across(all_of(max_cols), ~if (all(is.na(.x))) NA else max(.x, na.rm = TRUE)),
       .groups = "drop"
     ) %>%
     mutate(across(everything(), ~ifelse(is.infinite(.x), NA, .x))) %>%
     rename(Crop_strategy = cropstrategy)
-  
-  if (!is.null(out_path)) {
-    write_xlsx(PTFTW_metrics, out_path)
-  }
-  
-  return(PTFTW_metrics)
-}
 
+  if (!is.null(out_path)) write_xlsx(PTFTW_metrics, out_path)
+  PTFTW_metrics
+}
