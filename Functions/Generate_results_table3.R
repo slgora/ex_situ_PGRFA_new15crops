@@ -31,9 +31,9 @@ generate_table3 <- function(tbl_number, metrics_guide, all_metrics) {
   library(purrr)
   library(stringr)
   library(rlang)
-  
+
   crop_column <- "Crop_strategy"
-  
+
   # Prefer 'Name of Individual Metric Variable' over 'Name of Summary Variable (if summarized)'
   guide_clean <- metrics_guide %>%
     filter(`Pertains to Table` == tbl_number, `Metric Role` %in% c("Number", "Percentage")) %>%
@@ -68,7 +68,7 @@ generate_table3 <- function(tbl_number, metrics_guide, all_metrics) {
       role_variable == "BGCI_inst_count"          ~ "bgci_unique_inst_count",
       TRUE ~ role_variable
     ))
-  
+
   # Pivot to wide so each metric is a row with Number/Percentage cols
   guide_wide <- guide_clean %>%
     select(`Row in Table`,
@@ -79,7 +79,7 @@ generate_table3 <- function(tbl_number, metrics_guide, all_metrics) {
     mutate(Metric = first(Metric)) %>%
     pivot_wider(names_from = `Metric Role`, values_from = role_variable) %>%
     ungroup()
-  
+
   # Desired order of metrics (factor for correct table order)
   desired_order <- c(
     "Total number of accessions in genebank collections",
@@ -105,40 +105,54 @@ generate_table3 <- function(tbl_number, metrics_guide, all_metrics) {
     "Number of accessions in genebank collections from the primary and secondary region(s) of diversity",
     "Percent of accessions in genebank collections from the primary and secondary region(s) of diversity",
     "Number of taxa in botanic garden collections",
-    "Number of botanic institutions holding botanic garden collections"
+    "Number of botanic gardens holding collections of crop or its wild relatives"
   )
-  
+
   guide_wide <- guide_wide %>%
     mutate(Metric = factor(Metric, levels = desired_order)) %>%
     arrange(Metric)
-  
+
   # Formatting helpers
   format_number <- function(x) {
     if (is.na(x)) ""      # blank for NA
     else if (x == 0) "0"
-    else if (x > 1e4) format(x, big.mark = ",", scientific = FALSE)
+    else if (x >= 1e3) format(x, big.mark = ",", scientific = FALSE)
     else as.character(x)
   }
-  
+
   format_percent <- function(x) {
     if (is.na(x)) ""      # blank for NA
-    else sprintf("%.2f%%", x)
+    else sprintf("%.1f%%", as.numeric(x))
   }
-  
+
   # Capitalization for CWR only
   fix_metric_caps <- function(metric) {
     metric <- stringr::str_to_sentence(metric)
     metric <- stringr::str_replace_all(metric, "\\(cwr\\)", "(CWR)")
     metric
   }
-  
+
   # Warn if referenced variables are missing from all_metrics
   all_vars <- unique(na.omit(unlist(guide_wide[,c("Number","Percentage")])))
   missing_vars <- setdiff(all_vars, names(all_metrics))
   if(length(missing_vars) > 0) {
     warning("These variables are referenced in the guide but missing in all_metrics: ", paste(missing_vars, collapse = ", "))
   }
-  
+
+  # Helper to choose a single mapping from possibly multiple values (list or vector)
+  choose_mapping <- function(x) {
+    # x may be a character, NA, list, or vector. Return a single character or NA_character_.
+    if (is.null(x)) return(NA_character_)
+    # flatten list to character vector
+    vec <- if (is.list(x)) unlist(x) else as.character(x)
+    if (length(vec) == 0) return(NA_character_)
+    # prefer first non-NA non-empty element
+    vec2 <- vec[!is.na(vec) & vec != ""]
+    if (length(vec2) >= 1) return(as.character(vec2[1]))
+    # else if all NA or empty, return NA
+    return(NA_character_)
+  }
+
   # Split by crop and create output tables
   all_metrics %>%
     split(.[[crop_column]]) %>%
@@ -147,13 +161,27 @@ generate_table3 <- function(tbl_number, metrics_guide, all_metrics) {
       guide_wide %>%
         mutate(
           Number = map_chr(Number, ~{
-            col <- as.character(.x)
-            val <- if (!is.null(col) && col %in% names(crop_row)) crop_row[[col]] else NA_real_
+            col_raw <- .x
+            col <- choose_mapping(col_raw)
+            if (is.na(col) || col == "") {
+              val <- NA_real_
+            } else if (col %in% names(crop_row)) {
+              val <- crop_row[[col]]
+            } else {
+              val <- NA_real_
+            }
             format_number(as.numeric(val))
           }),
           Percentage = map_chr(Percentage, ~{
-            col <- as.character(.x)
-            val <- if (!is.null(col) && col %in% names(crop_row)) crop_row[[col]] else NA_real_
+            col_raw <- .x
+            col <- choose_mapping(col_raw)
+            if (is.na(col) || col == "") {
+              val <- NA_real_
+            } else if (col %in% names(crop_row)) {
+              val <- crop_row[[col]]
+            } else {
+              val <- NA_real_
+            }
             format_percent(as.numeric(val))
           }),
           Metric = fix_metric_caps(as.character(Metric))
@@ -162,3 +190,4 @@ generate_table3 <- function(tbl_number, metrics_guide, all_metrics) {
         select(Metric, Number, Percentage)
     })
 }
+
