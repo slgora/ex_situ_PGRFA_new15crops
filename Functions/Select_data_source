@@ -19,7 +19,7 @@ select_data_source <- function(
   stopifnot("INSTCODE" %in% colnames(Genesys_new15crops))
   stopifnot("INSTCODE" %in% colnames(WIEWS_new15crops))
   stopifnot(all(c("INSTCODE", "ORGANIZATIONTYPE") %in% colnames(institute_names_no_syn)))
-  
+
   # --- Read EURISCO safely ---
   eurisco_list <- tryCatch(
     readxl::read_excel(eurisco_path),
@@ -27,20 +27,20 @@ select_data_source <- function(
   )
   stopifnot("INSTCODE" %in% colnames(eurisco_list))
   eurisco_codes <- unique(eurisco_list$INSTCODE)
-  
+
   # --- Count records per INSTCODE ---
   genesys_counts <- Genesys_new15crops %>%
     dplyr::count(INSTCODE, name = "Genesys_records")
   wiews_counts <- WIEWS_new15crops %>%
     dplyr::count(INSTCODE, name = "WIEWS_records")
-  
+
   # --- Full set of institutes from all sources ---
   all_instcodes <- union(
     union(genesys_counts$INSTCODE, wiews_counts$INSTCODE),
     union(institute_names_no_syn$INSTCODE, eurisco_codes)
   ) %>% unique() %>% as.data.frame()
   colnames(all_instcodes) <- "INSTCODE"
-  
+
   # --- Merge all info ---
   summary_table <- all_instcodes %>%
     left_join(genesys_counts, by = "INSTCODE") %>%
@@ -52,7 +52,7 @@ select_data_source <- function(
       ORGANIZATIONTYPE = tidyr::replace_na(ORGANIZATIONTYPE, "Unknown"),
       EURISCO = INSTCODE %in% eurisco_codes
     )
-  
+
   # --- Selection logic for 'keep' column ---
   summary_table <- summary_table %>%
     mutate(
@@ -64,4 +64,9 @@ select_data_source <- function(
         TRUE ~ NA_character_
       )
     )
- 
+
+  # --- Select only relevant columns ---
+  summary_table %>%
+    select(INSTCODE, Genesys_records, WIEWS_records, ORGANIZATIONTYPE, EURISCO, keep)
+}
+
