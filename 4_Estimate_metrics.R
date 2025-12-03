@@ -29,7 +29,9 @@ accession_by_source <- combined_allcrops %>% count(data_source, Crop_strategy, n
 
 # 2. Unique institutions per crop strategy
 unique_institutions <- combined_allcrops %>%
-  group_by(Crop_strategy) %>% summarise(unique_instcount = n_distinct(INSTCODE), .groups = "drop")
+  filter(INSTCODE != "DUMMY") %>%
+  group_by(Crop_strategy) %>%
+  summarise(unique_instcount = n_distinct(INSTCODE), .groups = "drop")
 
 # 3. Wild, Weedy, Landrace, Breeding, Improved, Other, No SAMPSTAT - % summaries
 cwr_metric <- percent_summary(combined_allcrops, Crop_strategy, sum(SAMPSTAT >= 100 & SAMPSTAT < 200, na.rm = TRUE), cwr_total_records, SAMPSTAT100_perc) %>%
