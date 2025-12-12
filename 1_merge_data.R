@@ -302,12 +302,12 @@ write.csv(sgsv, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/SGS
 
 ################# FAO WIEWS Indicator data ##########################################################################
 # read in FAO WIEWS indicator file and croplist_PG within function
-source("../../GCCSmetricsII/Code/R_code/Functions/Load_WIEWS_indicator_data.R")                            
+source("../../GCCSmetricsII/Code/R_code/Functions/Load_WIEWS_indicator_data.R")
 WIEWS_indicator_new15_proccessed <- process_wiews_indicator_data(
-  wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/FAO_WIEWS_Indicator22.xlsx",
-  croplist_path = "../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx"
-)
+  wiews_path = "../../GCCSmetricsII/Data/FAO_WIEWS/Indicator_22_data/Wiews_Indicator_1733321439198_regenerations2014-2019.xlsx",
+  croplist_path = "../../GCCSmetricsII/Data_processing/Support_files/GCCS_Selected_crops/croplist_new15crops.xlsx")
 # save results
-write.csv(WIEWS_indicator_new15_proccessed, '../../GCCSmetricsII/Data_processing/1_merge_data/2025_09_30/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
+write.csv(WIEWS_indicator_new15_proccessed, 'G:/.shortcut-targets-by-id/1GnMqdK_h04rDh_GYxxYBWiyuGZFSN2GZ/GCCS metrics project shared folder/GCCSmetricsII/Data_processing/1_merge_data/2025_10_09/WIEWS_indicator_new15_processed.csv', row.names = FALSE)
+
 
 ############ END SCRIPT ##############
